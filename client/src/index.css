@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0a0a0f;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2a2a4a;
+    border-radius: 3px;
+  }
+}
+
+@layer components {
+  .card-base {
+    @apply relative rounded-xl border border-cabo-border shadow-lg transition-all duration-300;
+    background: linear-gradient(145deg, #1a1a2e, #16162a);
+  }
+
+  .card-face-down {
+    background: linear-gradient(145deg, #1a1a2e 0%, #242445 50%, #1a1a2e 100%);
+    background-size: 200% 100%;
+  }
+
+  .card-face-down::after {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    border-radius: 8px;
+    pointer-events: none;
+  }
+
+  .card-glow {
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.4), 0 0 30px rgba(212, 175, 55, 0.1);
+  }
+
+  .card-glow-red {
+    box-shadow: 0 0 15px rgba(231, 76, 60, 0.4), 0 0 30px rgba(231, 76, 60, 0.1);
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 rounded-xl font-display font-semibold text-cabo-dark transition-all duration-300;
+    background: linear-gradient(135deg, #d4af37, #f0d060);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 rounded-xl font-display font-semibold border border-cabo-border text-cabo-text transition-all duration-300;
+    background: rgba(26, 26, 46, 0.8);
+  }
+
+  .btn-secondary:hover {
+    border-color: rgba(212, 175, 55, 0.5);
+    background: rgba(36, 36, 69, 0.8);
+  }
+
+  .btn-danger {
+    @apply px-6 py-3 rounded-xl font-display font-semibold text-white transition-all duration-300;
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+  }
+
+  .btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
+  }
+
+  .glass-panel {
+    @apply rounded-2xl border border-cabo-border;
+    background: rgba(22, 22, 42, 0.85);
+    backdrop-filter: blur(20px);
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl bg-cabo-dark border border-cabo-border text-cabo-text font-body
+           placeholder-cabo-textDim focus:outline-none focus:border-cabo-accent transition-colors duration-300;
+  }
+
+  .cabo-alert-border {
+    animation: caboAlert 1s ease-in-out infinite;
+    border-width: 3px;
+  }
+
+  .active-turn-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+}
+
+/* Card suit colors */
+.suit-red { color: #e74c3c; }
+.suit-black { color: #e8e8f0; }
+
+/* Table felt background */
+.table-felt {
+  background: radial-gradient(ellipse at center, #1a2a1a 0%, #0a0a0f 70%);
+}
+
+/* Ambient particles */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+  50% { transform: translateY(-20px) rotate(180deg); opacity: 0.1; }
+}
