@@ -42,6 +42,7 @@ interface GameStore {
   setSelectedCardIndex: (index: number | null) => void;
   setActionMode: (mode: ActionType | null) => void;
   clearPeekedCard: () => void;
+  skipAction: () => Promise<void>;
   initializeSocket: () => void;
 }
 
@@ -290,4 +291,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setSelectedCardIndex: (index) => set({ selectedCardIndex: index }),
   setActionMode: (mode) => set({ actionMode: mode }),
   clearPeekedCard: () => set({ peekedCard: null, showPeekedCard: false }),
+
+  skipAction: async () => {
+    try {
+      const res: any = await socketService.emit(SocketEvents.SKIP_ACTION);
+      if (res.success) {
+        set({ actionMode: null, selectedCardIndex: null });
+      } else {
+        set({ error: 'Failed to skip action' });
+        setTimeout(() => set({ error: null }), 3000);
+      }
+    } catch (err) {
+      set({ error: 'Failed to skip action' });
+      setTimeout(() => set({ error: null }), 3000);
+    }
+  },
 }));

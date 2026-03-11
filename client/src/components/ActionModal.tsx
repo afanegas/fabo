@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
 
 export const ActionModal: React.FC = () => {
-  const { actionMode, gameState, playerId, selectedCardIndex, setSelectedCardIndex, useAction, setActionMode } = useGameStore();
+  const { actionMode, gameState, playerId, selectedCardIndex, setSelectedCardIndex, useAction, skipAction } = useGameStore();
   const [targetPlayerId, setTargetPlayerId] = useState<string | null>(null);
   const [targetCardIndex, setTargetCardIndex] = useState<number | null>(null);
 
@@ -28,7 +28,7 @@ export const ActionModal: React.FC = () => {
   };
 
   const handleSkip = () => {
-    setActionMode(null);
+    skipAction();
     setSelectedCardIndex(null);
     setTargetPlayerId(null);
     setTargetCardIndex(null);
@@ -63,7 +63,7 @@ export const ActionModal: React.FC = () => {
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 20 }}
-          className="glass-panel p-6 max-w-sm w-full space-y-4"
+          className="glass-panel p-6 max-w-sm w-full space-y-4 max-h-[85vh] overflow-y-auto"
         >
           <h3 className="text-lg font-display font-bold text-cabo-accent">
             {titles[actionMode]}
@@ -71,6 +71,30 @@ export const ActionModal: React.FC = () => {
           <p className="text-cabo-textDim text-sm">
             {descriptions[actionMode]}
           </p>
+
+          {/* PEEK — select own card */}
+          {actionMode === 'PEEK' && (
+            <div className="space-y-2">
+              <p className="text-xs font-display text-cabo-textDim">Select one of your cards:</p>
+              <div className="flex gap-2 justify-center">
+                {gameState.myCards.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedCardIndex(selectedCardIndex === i ? null : i)}
+                    className={`
+                      w-12 h-16 rounded-lg border text-xs font-display font-bold transition-all
+                      ${selectedCardIndex === i
+                        ? 'border-cabo-accent bg-cabo-accent/20 text-cabo-accent ring-2 ring-cabo-accent'
+                        : 'border-cabo-border bg-cabo-surface text-cabo-textDim hover:border-cabo-accent/50'
+                      }
+                    `}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Target player selection for SPY and SWAP */}
           {(actionMode === 'SPY' || actionMode === 'SWAP') && (
@@ -97,7 +121,7 @@ export const ActionModal: React.FC = () => {
               {/* Target card selection */}
               {targetPlayerId && (
                 <div className="space-y-1">
-                  <p className="text-xs font-display text-cabo-textDim">Select card position:</p>
+                  <p className="text-xs font-display text-cabo-textDim">Select their card:</p>
                   <div className="flex gap-2">
                     {Array.from({
                       length: opponents.find(p => p.id === targetPlayerId)?.cardCount || 0
@@ -122,19 +146,33 @@ export const ActionModal: React.FC = () => {
             </div>
           )}
 
-          {/* PEEK instruction */}
-          {actionMode === 'PEEK' && (
-            <p className="text-xs text-cabo-textDim">
-              Tap one of your cards below to peek at it.
-            </p>
-          )}
-
-          {/* SWAP — select own card */}
+          {/* SWAP — select own card inside modal */}
           {actionMode === 'SWAP' && (
-            <p className="text-xs text-cabo-textDim">
-              Also tap one of your own cards below.
-              {selectedCardIndex !== null && ` Card ${selectedCardIndex + 1} selected.`}
-            </p>
+            <div className="space-y-2">
+              <p className="text-xs font-display text-cabo-textDim">Select your card to swap:</p>
+              <div className="flex gap-2 justify-center">
+                {gameState.myCards.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedCardIndex(selectedCardIndex === i ? null : i)}
+                    className={`
+                      w-12 h-16 rounded-lg border text-xs font-display font-bold transition-all
+                      ${selectedCardIndex === i
+                        ? 'border-cabo-accent bg-cabo-accent/20 text-cabo-accent ring-2 ring-cabo-accent'
+                        : 'border-cabo-border bg-cabo-surface text-cabo-textDim hover:border-cabo-accent/50'
+                      }
+                    `}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+              {selectedCardIndex !== null && (
+                <p className="text-xs text-cabo-accent text-center font-display">
+                  ✓ Your card {selectedCardIndex + 1} selected
+                </p>
+              )}
+            </div>
           )}
 
           <div className="flex gap-3 pt-2">

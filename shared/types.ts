@@ -88,6 +88,7 @@ export enum SocketEvents {
   KEEP_DRAWN_CARD = 'keep_drawn_card',
   DISCARD_DRAWN_CARD = 'discard_drawn_card',
   USE_ACTION = 'use_action',
+  SKIP_ACTION = 'skip_action',
   CALL_CABO = 'call_cabo',
   SNAP = 'snap',
   NEXT_ROUND = 'next_round',

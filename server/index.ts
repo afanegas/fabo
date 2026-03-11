@@ -191,6 +191,16 @@ io.on('connection', (socket: Socket) => {
     broadcastState(room);
   });
 
+  // ─── Skip Action ───
+  socket.on(SocketEvents.SKIP_ACTION, (_, callback) => {
+    const { room, player } = getContext(socket);
+    if (!room || !player) return callback?.({ success: false });
+
+    const success = room.skipAction(player.id);
+    callback?.({ success });
+    if (success) broadcastState(room);
+  });
+
   // ─── Call Cabo ───
   socket.on(SocketEvents.CALL_CABO, (_, callback) => {
     const { room, player } = getContext(socket);

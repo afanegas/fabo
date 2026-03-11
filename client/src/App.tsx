@@ -1,14 +1,21 @@
 import React from 'react';
 import { useGameStore } from './store/gameStore';
+import { LandingPage } from './screens/LandingPage';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { GameScreen } from './screens/GameScreen';
 
 const App: React.FC = () => {
-  const { gameState } = useGameStore();
+  const { gameState, roomCode } = useGameStore();
 
+  // In active game (playing, memorize, etc.)
   const inGame = gameState && gameState.phase !== 'WAITING';
+  if (inGame) return <GameScreen />;
 
-  return inGame ? <GameScreen /> : <LobbyScreen />;
+  // In a room, waiting for players
+  if (roomCode && gameState?.phase === 'WAITING') return <LobbyScreen />;
+
+  // Landing page
+  return <LandingPage />;
 };
 
 export default App;

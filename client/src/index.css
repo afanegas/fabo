@@ -17,6 +17,13 @@
     background: #2a2a4a;
     border-radius: 3px;
   }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3a3a5a;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 @layer components {
@@ -102,17 +109,120 @@
   }
 }
 
-/* Card suit colors */
+/* ─── Card suit colors ─── */
 .suit-red { color: #e74c3c; }
 .suit-black { color: #e8e8f0; }
 
-/* Table felt background */
+/* ─── Table felt background ─── */
 .table-felt {
   background: radial-gradient(ellipse at center, #1a2a1a 0%, #0a0a0f 70%);
 }
 
-/* Ambient particles */
+/* ─── Game screen overflow lock ─── */
+.in-game {
+  overflow: hidden;
+}
+
+/* ─── Landing page ─── */
+.landing-page {
+  background: #060609;
+  overflow-x: hidden;
+}
+
+.landing-page section {
+  position: relative;
+}
+
+/* ─── Hero title animation ─── */
+.hero-title {
+  animation: heroShimmer 4s linear infinite;
+}
+
+@keyframes heroShimmer {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ─── Hero buttons ─── */
+.hero-btn-primary {
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hero-btn-primary:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 40px rgba(212, 175, 55, 0.4);
+}
+
+.hero-btn-primary:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+.hero-btn-secondary {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hero-btn-secondary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(212, 175, 55, 0.15);
+}
+
+/* ─── Flip card ─── */
+.flip-card-container {
+  perspective: 1000px;
+}
+
+.flip-card-inner {
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.flip-card-face {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* ─── Action cards hover ─── */
+.action-card {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.action-card:hover {
+  border-color: rgba(212, 175, 55, 0.2);
+}
+
+/* ─── Tutorial phase sections ─── */
+.tutorial-phase {
+  position: relative;
+}
+
+.tutorial-phase::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(22,22,42,0.3) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* ─── Ambient particles ─── */
 @keyframes float {
   0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
   50% { transform: translateY(-20px) rotate(180deg); opacity: 0.1; }
+}
+
+/* ─── Smooth scroll sections ─── */
+@media (prefers-reduced-motion: no-preference) {
+  .landing-page {
+    scroll-snap-type: y proximity;
+  }
+
+  .landing-page > section {
+    scroll-snap-align: start;
+  }
+}
+
+/* ─── Canvas container ─── */
+.landing-page canvas {
+  display: block;
 }
