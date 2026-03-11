@@ -46,6 +46,8 @@ interface GameStore {
   initializeSocket: () => void;
 }
 
+let errorTimeoutId: NodeJS.Timeout | null = null;
+
 export const useGameStore = create<GameStore>((set, get) => ({
   // Initial state
   playerId: null,
@@ -64,7 +66,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
   snapNotification: null,
 
   setPlayerName: (name) => set({ playerName: name }),
-  setError: (error) => set({ error }),
+  
+  setError: (error) => {
+    set({ error });
+    
+    // Clear any existing timeout to reset the 4-second clock
+    if (errorTimeoutId) {
+      clearTimeout(errorTimeoutId);
+      errorTimeoutId = null;
+    }
+
+    // Only set a new timeout if we are actually displaying an error
+    if (error) {
+      errorTimeoutId = setTimeout(() => {
+        set({ error: null });
+        errorTimeoutId = null;
+      }, 4000);
+    }
+  },
 
   initializeSocket: () => {
     socketService.connect();
@@ -118,52 +137,53 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
 
     socketService.on(SocketEvents.ERROR, (data: { message: string }) => {
-      set({ error: data.message });
-      setTimeout(() => set({ error: null }), 3000);
+      get().setError(data.message);
     });
   },
 
   createRoom: async () => {
     try {
       const name = get().playerName.trim();
-      if (!name) { set({ error: 'Please enter your name' }); return; }
+      if (!name) { get().setError('Please enter your name'); return; }
 
       const res: any = await socketService.emit(SocketEvents.CREATE_ROOM, { playerName: name });
       if (res.success) {
-        set({ roomCode: res.roomCode, playerId: res.playerId, error: null });
+        set({ roomCode: res.roomCode, playerId: res.playerId });
+        get().setError(null);
       } else {
-        set({ error: res.error || 'Failed to create room' });
+        get().setError(res.error || 'Failed to create room');
       }
     } catch (err) {
-      set({ error: 'Connection failed' });
+      get().setError('Connection failed');
     }
   },
 
   joinRoom: async (code) => {
     try {
       const name = get().playerName.trim();
-      if (!name) { set({ error: 'Please enter your name' }); return; }
+      if (!name) { get().setError('Please enter your name'); return; }
 
       const res: any = await socketService.emit(SocketEvents.JOIN_ROOM, {
         roomCode: code.toUpperCase(),
         playerName: name,
       });
       if (res.success) {
-        set({ roomCode: res.roomCode, playerId: res.playerId, error: null });
+        set({ roomCode: res.roomCode, playerId: res.playerId });
+        get().setError(null);
       } else {
-        set({ error: res.error || 'Failed to join room' });
+        get().setError(res.error || 'Failed to join room');
       }
     } catch (err) {
-      set({ error: 'Connection failed' });
+      get().setError('Connection failed');
     }
   },
 
   startGame: async () => {
     try {
       const res: any = await socketService.emit(SocketEvents.START_GAME);
-      if (!res.success) set({ error: res.error || 'Cannot start game' });
+      if (!res.success) get().setError(res.error || 'Cannot start game');
     } catch (err) {
-      set({ error: 'Failed to start game' });
+      get().setError('Failed to start game');
     }
   },
 
@@ -175,7 +195,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         setTimeout(() => set({ showPeekedCard: false, peekedCard: null }), 2500);
       }
     } catch (err) {
-      set({ error: 'Failed to peek' });
+      get().setError('Failed to peek');
     }
   },
 
@@ -183,7 +203,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     try {
       await socketService.emit(SocketEvents.DONE_MEMORIZING);
     } catch (err) {
-      set({ error: 'Failed' });
+      get().setError('Failed');
     }
   },
 
@@ -193,10 +213,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       if (res.success && res.card) {
         set({ drawnCard: res.card });
       } else {
-        set({ error: res.error || 'Cannot draw' });
+        get().setError(res.error || 'Cannot draw');
       }
     } catch (err) {
-      set({ error: 'Failed to draw' });
+      get().setError('Failed to draw');
     }
   },
 
@@ -206,10 +226,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       if (res.success && res.card) {
         set({ drawnCard: res.card });
       } else {
-        set({ error: res.error || 'Cannot draw' });
+        get().setError(res.error || 'Cannot draw');
       }
     } catch (err) {
-      set({ error: 'Failed to draw' });
+      get().setError('Failed to draw');
     }
   },
 
@@ -217,13 +237,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     try {
       const res: any = await socketService.emit(SocketEvents.KEEP_DRAWN_CARD, { swapIndices });
       if (res.penalized) {
-        set({ error: 'Penalty! Cards didn\'t match — turn lost', drawnCard: null, selectedCardIndex: null });
-        setTimeout(() => set({ error: null }), 3000);
+        get().setError('Penalty! Cards didn\'t match — turn lost');
+        set({ drawnCard: null, selectedCardIndex: null });
       } else if (res.success) {
         set({ drawnCard: null, selectedCardIndex: null });
       }
     } catch (err) {
-      set({ error: 'Failed' });
+      get().setError('Failed');
     }
   },
 
@@ -237,7 +257,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         }
       }
     } catch (err) {
-      set({ error: 'Failed' });
+      get().setError('Failed');
     }
   },
 
@@ -251,19 +271,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
           setTimeout(() => set({ showPeekedCard: false, peekedCard: null }), 2500);
         }
       } else {
-        set({ error: 'Action failed' });
+        get().setError('Action failed');
       }
     } catch (err) {
-      set({ error: 'Failed' });
+      get().setError('Failed');
     }
   },
 
   callCabo: async () => {
     try {
       const res: any = await socketService.emit(SocketEvents.CALL_CABO);
-      if (!res.success) set({ error: res.error || 'Cannot call Cabo' });
+      if (!res.success) get().setError(res.error || 'Cannot call Cabo');
     } catch (err) {
-      set({ error: 'Failed' });
+      get().setError('Failed');
     }
   },
 
@@ -271,11 +291,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     try {
       const res: any = await socketService.emit(SocketEvents.SNAP, { cardIndex });
       if (!res.success) {
-        set({ error: 'Card doesn\'t match!' });
-        setTimeout(() => set({ error: null }), 2000);
+        get().setError('Card doesn\'t match!');
       }
     } catch (err) {
-      set({ error: 'Failed' });
+      get().setError('Failed');
     }
   },
 
@@ -284,7 +303,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       await socketService.emit(SocketEvents.NEXT_ROUND);
       set({ showScoreBoard: false });
     } catch (err) {
-      set({ error: 'Failed' });
+      get().setError('Failed');
     }
   },
 
@@ -298,12 +317,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       if (res.success) {
         set({ actionMode: null, selectedCardIndex: null });
       } else {
-        set({ error: 'Failed to skip action' });
-        setTimeout(() => set({ error: null }), 3000);
+        get().setError('Failed to skip action');
       }
     } catch (err) {
-      set({ error: 'Failed to skip action' });
-      setTimeout(() => set({ error: null }), 3000);
+      get().setError('Failed to skip action');
     }
   },
 }));

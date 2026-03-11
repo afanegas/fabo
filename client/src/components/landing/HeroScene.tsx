@@ -1,157 +1,181 @@
-import React, { useRef, useMemo, useEffect, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Float, Text3D, Center, Environment, Stars } from '@react-three/drei';
+import { Center, Environment, Float, ContactShadows, MeshTransmissionMaterial } from '@react-three/drei';
 import * as THREE from 'three';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// ─── Floating Card Mesh ───
-const FloatingCard: React.FC<{
+// --- 3D Components ---
+
+const LuxuryCard: React.FC<{
   position: [number, number, number];
   rotation?: [number, number, number];
-  delay?: number;
-  color?: string;
-}> = ({ position, rotation = [0, 0, 0], delay = 0, color = '#d4af37' }) => {
-  const meshRef = useRef<THREE.Mesh>(null!);
+  isHoverable?: boolean;
+}> = ({ position, rotation = [0, 0, 0], isHoverable = false }) => {
+  const meshRef = useRef<THREE.Group>(null!);
   const [hovered, setHovered] = useState(false);
+  const targetRotation = useRef(new THREE.Vector3(...rotation));
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     if (!meshRef.current) return;
-    const t = state.clock.elapsedTime + delay;
-    meshRef.current.rotation.x = rotation[0] + Math.sin(t * 0.5) * 0.1;
-    meshRef.current.rotation.y = rotation[1] + Math.sin(t * 0.3) * 0.15;
-    meshRef.current.rotation.z = rotation[2] + Math.cos(t * 0.4) * 0.05;
-    meshRef.current.position.y = position[1] + Math.sin(t * 0.6) * 0.15;
+    
+    // Smooth corner lift (peek) effect on hover
+    if (isHoverable) {
+      targetRotation.current.x = hovered ? rotation[0] + 0.25 : rotation[0];
+      targetRotation.current.z = hovered ? rotation[2] + 0.15 : rotation[2];
+      meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, hovered ? position[1] + 0.15 : position[1], delta * 6);
+    }
+
+    meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, targetRotation.current.x, delta * 6);
+    meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, targetRotation.current.y, delta * 6);
+    meshRef.current.rotation.z = THREE.MathUtils.lerp(meshRef.current.rotation.z, targetRotation.current.z, delta * 6);
   });
 
   return (
-    <mesh
-      ref={meshRef}
+    <group 
+      ref={meshRef} 
       position={position}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
-      scale={hovered ? 1.15 : 1}
+      onPointerOver={() => isHoverable && setHovered(true)}
+      onPointerOut={() => isHoverable && setHovered(false)}
     >
-      <boxGeometry args={[0.7, 1, 0.02]} />
-      <meshStandardMaterial
-        color={hovered ? '#f0d060' : '#1a1a2e'}
-        emissive={color}
-        emissiveIntensity={hovered ? 0.4 : 0.15}
-        metalness={0.8}
-        roughness={0.2}
-      />
-      {/* Card border */}
-      <lineSegments>
-        <edgesGeometry args={[new THREE.BoxGeometry(0.7, 1, 0.02)]} />
-        <lineBasicMaterial color={color} transparent opacity={hovered ? 0.9 : 0.4} />
-      </lineSegments>
-      {/* Card inner pattern */}
-      <mesh position={[0, 0, 0.011]}>
-        <planeGeometry args={[0.55, 0.85]} />
-        <meshStandardMaterial
-          color="#242445"
-          emissive={color}
-          emissiveIntensity={0.05}
-          transparent
-          opacity={0.6}
+      {/* Card Base */}
+      <mesh castShadow receiveShadow>
+        <boxGeometry args={[0.7, 1, 0.015]} />
+        <meshStandardMaterial 
+          color="#16162a" // cabo-surface
+          roughness={0.7} 
+          metalness={0.1}
         />
       </mesh>
-      {/* Center C logo */}
-      <mesh position={[0, 0, 0.012]}>
-        <ringGeometry args={[0.1, 0.15, 32]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.3}
-          transparent
-          opacity={0.5}
+      
+      {/* Back Pattern (Subtle luxury texture) */}
+      <mesh position={[0, 0, 0.008]}>
+        <planeGeometry args={[0.62, 0.92]} />
+        <meshStandardMaterial 
+          color="#0a0a0f" // cabo-dark
+          roughness={0.8}
         />
       </mesh>
-    </mesh>
+      
+      {/* Gold Foil Accent (Cabo C) */}
+      <mesh position={[0, 0, 0.0085]}>
+        <ringGeometry args={[0.12, 0.15, 32]} />
+        <meshStandardMaterial 
+          color="#d4af37" // cabo-accent
+          metalness={0.6} 
+          roughness={0.2}
+        />
+      </mesh>
+    </group>
   );
 };
 
-// ─── Particles ───
-const Particles: React.FC<{ count?: number }> = ({ count = 200 }) => {
-  const mesh = useRef<THREE.Points>(null!);
-  const positions = useMemo(() => {
-    const pos = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 20;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 20;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 20;
-    }
-    return pos;
-  }, [count]);
+const DeckPile: React.FC<{ isShuffling: boolean }> = ({ isShuffling }) => {
+  const groupRef = useRef<THREE.Group>(null!);
 
-  useFrame((state) => {
-    if (mesh.current) {
-      mesh.current.rotation.y = state.clock.elapsedTime * 0.02;
-      mesh.current.rotation.x = state.clock.elapsedTime * 0.01;
+  useFrame((state, delta) => {
+    if (!groupRef.current) return;
+    
+    if (isShuffling) {
+      groupRef.current.children.forEach((child, i) => {
+        const offset = Math.sin(state.clock.elapsedTime * 15 + i * 0.5) * 0.08;
+        const lift = Math.abs(Math.sin(state.clock.elapsedTime * 10 + i * 0.5)) * 0.05;
+        child.position.x = THREE.MathUtils.lerp(child.position.x, offset, delta * 8);
+        child.position.y = THREE.MathUtils.lerp(child.position.y, lift, delta * 8);
+      });
+    } else {
+      groupRef.current.children.forEach((child) => {
+        child.position.x = THREE.MathUtils.lerp(child.position.x, 0, delta * 5);
+        child.position.y = THREE.MathUtils.lerp(child.position.y, 0, delta * 5);
+      });
     }
   });
 
   return (
-    <points ref={mesh}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={count}
-          array={positions}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.03}
-        color="#d4af37"
-        transparent
-        opacity={0.6}
-        sizeAttenuation
-      />
-    </points>
+    <group ref={groupRef} position={[2.2, -0.05, -1]} rotation={[-Math.PI / 2, 0, 0.1]}>
+      {[...Array(6)].map((_, i) => (
+        <mesh key={i} position={[0, 0, i * 0.016]} castShadow receiveShadow>
+          <boxGeometry args={[0.7, 1, 0.015]} />
+          <meshStandardMaterial color="#16162a" roughness={0.7} metalness={0.1} />
+          <mesh position={[0, 0, 0.008]}>
+            <planeGeometry args={[0.62, 0.92]} />
+            <meshStandardMaterial color="#0a0a0f" roughness={0.8} />
+          </mesh>
+        </mesh>
+      ))}
+    </group>
   );
 };
 
-// ─── Glowing Table Surface ───
-const CardTable: React.FC = () => {
-  const meshRef = useRef<THREE.Mesh>(null!);
-
-  useFrame((state) => {
-    if (meshRef.current) {
-      (meshRef.current.material as THREE.MeshStandardMaterial).emissiveIntensity =
-        0.02 + Math.sin(state.clock.elapsedTime * 0.5) * 0.01;
-    }
-  });
-
+const DiscardPile: React.FC = () => {
   return (
-    <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.5, 0]}>
-      <circleGeometry args={[4, 64]} />
-      <meshStandardMaterial
-        color="#0a1a0a"
-        emissive="#1a4a2a"
-        emissiveIntensity={0.03}
-        metalness={0.1}
-        roughness={0.9}
-      />
+    <group position={[-2.2, -0.05, -0.8]} rotation={[-Math.PI / 2, 0, -0.15]}>
+      {/* Card 1 */}
+      <mesh position={[0.1, -0.1, 0]} castShadow>
+        <boxGeometry args={[0.7, 1, 0.015]} />
+        <meshStandardMaterial color="#16162a" roughness={0.7} />
+      </mesh>
+      {/* Card 2 (Face Up Example) */}
+      <mesh position={[-0.05, 0.05, 0.016]} rotation={[0, 0, 0.2]} castShadow receiveShadow>
+        <boxGeometry args={[0.7, 1, 0.015]} />
+        <meshStandardMaterial color="#16162a" roughness={0.7} />
+        {/* Face white base */}
+        <mesh position={[0, 0, 0.008]}>
+          <planeGeometry args={[0.62, 0.92]} />
+          <meshStandardMaterial color="#e8e8f0" roughness={0.6} />
+        </mesh>
+        {/* Simple Number 'Cabo' as face up */}
+        <mesh position={[0, 0, 0.0085]}>
+           <planeGeometry args={[0.3, 0.3]} />
+           <meshStandardMaterial color="#6c3483" roughness={0.5} /> {/* cabo-purple touch */}
+        </mesh>
+      </mesh>
+    </group>
+  );
+};
+
+// ─── Invisible Ground for Shadows ───
+const ShadowCatcher: React.FC = () => {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, -0.1, 0]}>
+      <planeGeometry args={[100, 100]} />
+      <shadowMaterial transparent opacity={0.4} />
     </mesh>
   );
 };
 
-// ─── Mouse-tracking Camera ───
-const CameraRig: React.FC = () => {
+// Glass title removed by user request -> shifting focus entirely to typography
+
+// ─── Camera Parallax ───
+const CameraRig: React.FC<{ isInputFocused: boolean }> = ({ isInputFocused }) => {
   const { camera } = useThree();
   const mouse = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
+      if (isInputFocused) return;
       mouse.current.x = (e.clientX / window.innerWidth - 0.5) * 2;
       mouse.current.y = (e.clientY / window.innerHeight - 0.5) * 2;
     };
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  }, [isInputFocused]);
 
-  useFrame(() => {
-    camera.position.x += (mouse.current.x * 0.5 - camera.position.x) * 0.05;
-    camera.position.y += (-mouse.current.y * 0.3 + 0.5 - camera.position.y) * 0.05;
+  useFrame((state, delta) => {
+    // Dynamic sizing for mobile
+    const isMobile = window.innerWidth < 768;
+    const baseZ = isMobile ? 6.5 : 4.5; // Pull camera further back on mobile
+    const baseY = isMobile ? 1.0 : 2.5; // Lower camera angle on mobile to avoid overlapping top title
+    const parallaxDepthX = isMobile ? 0.2 : 0.5;
+    const parallaxDepthY = isMobile ? 0.1 : 0.2;
+
+    const targetX = isInputFocused ? 0 : mouse.current.x * parallaxDepthX;
+    const targetY = isInputFocused ? baseY - 0.5 : baseY + (-mouse.current.y * parallaxDepthY);
+    const targetZ = isInputFocused ? baseZ - 1 : baseZ;
+    
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, delta * 3);
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, delta * 3);
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, delta * 3);
+    
     camera.lookAt(0, 0, 0);
   });
 
@@ -159,46 +183,49 @@ const CameraRig: React.FC = () => {
 };
 
 // ─── Main 3D Scene ───
-const Scene3D: React.FC = () => {
+const Scene3D: React.FC<{ isShuffling: boolean, isInputFocused: boolean }> = ({ isShuffling, isInputFocused }) => {
   return (
     <>
-      <ambientLight intensity={0.15} />
-      <pointLight position={[0, 3, 2]} intensity={1.5} color="#d4af37" distance={12} />
-      <pointLight position={[-3, 2, -1]} intensity={0.5} color="#6c3483" distance={10} />
-      <pointLight position={[3, 2, -1]} intensity={0.5} color="#2ecc71" distance={10} />
-      <spotLight
-        position={[0, 5, 0]}
-        angle={0.6}
-        penumbra={0.8}
-        intensity={1}
-        color="#d4af37"
-        castShadow
+      <color attach="background" args={['#000000']} />
+      
+      {/* Background disabled via alpha: true in Canvas, allowing CSS gradient to show through */}
+      
+      {/* Volumetric Studio Lighting */}
+      <ambientLight intensity={1.5} color="#e8e8f0" /> {/* Higher ambient for clarity */}
+      
+      {/* Key Light - Warm - Adjusted mapSize for performance */}
+      <directionalLight 
+        position={[8, 12, 6]} 
+        intensity={2.5} 
+        castShadow 
+        shadow-mapSize={[1024, 1024]}
+        shadow-bias={-0.0001}
+        color="#fef7e5" 
       />
+      
+      {/* Fill Light - Cool */}
+      <directionalLight position={[-8, 8, -6]} intensity={1.5} color="#dbeafe" />
+      
+      {/* Accent Point Light for the Glass Title */}
+      <pointLight position={[0, 2, -1]} intensity={2} color="#d4af37" distance={8} />
 
-      <CameraRig />
-      <CardTable />
-      <Particles count={300} />
-      <Stars radius={15} depth={50} count={1000} factor={3} saturation={0} fade speed={1} />
+      {/* Environment for pristine reflections */}
+      <Environment preset="studio" blur={0.8} />
 
-      {/* Four floating cards */}
-      <FloatingCard position={[-1.0, 0, 0.3]} rotation={[0.2, -0.3, 0.1]} delay={0} />
-      <FloatingCard position={[-0.35, 0.1, -0.2]} rotation={[-0.1, 0.2, -0.05]} delay={1.5} />
-      <FloatingCard position={[0.35, 0.05, 0.1]} rotation={[0.15, -0.1, 0.08]} delay={3} />
-      <FloatingCard position={[1.0, -0.05, -0.3]} rotation={[-0.2, 0.3, -0.1]} delay={4.5} />
+      <CameraRig isInputFocused={isInputFocused} />
+      <ShadowCatcher /> {/* Transparent shadow receiver for the "table" */}
 
-      {/* Deck pile */}
-      {[...Array(5)].map((_, i) => (
-        <mesh key={i} position={[2.5, -1.3 + i * 0.025, 0]} rotation={[-Math.PI / 2 + 0.02, 0, 0.05]}>
-          <boxGeometry args={[0.7, 1, 0.02]} />
-          <meshStandardMaterial color="#1a1a2e" emissive="#d4af37" emissiveIntensity={0.02} />
-        </mesh>
-      ))}
+      {/* Foreground Player Cards (Hoverable for peek) */}
+      <LuxuryCard position={[-1.2, 0, 1]} rotation={[-Math.PI / 2, 0, -0.05]} isHoverable />
+      <LuxuryCard position={[-0.4, 0, 1.1]} rotation={[-Math.PI / 2, 0, -0.02]} isHoverable />
+      <LuxuryCard position={[0.4, 0, 1.1]} rotation={[-Math.PI / 2, 0, 0.02]} isHoverable />
+      <LuxuryCard position={[1.2, 0, 1]} rotation={[-Math.PI / 2, 0, 0.05]} isHoverable />
 
-      {/* Discard pile */}
-      <mesh position={[-2.5, -1.3, 0]} rotation={[-Math.PI / 2 + 0.02, 0, -0.08]}>
-        <boxGeometry args={[0.7, 1, 0.02]} />
-        <meshStandardMaterial color="#e8e8f0" emissive="#d4af37" emissiveIntensity={0.1} />
-      </mesh>
+      <DeckPile isShuffling={isShuffling} />
+      <DiscardPile />
+
+      {/* Grounding shadow - Reduced resolution for performance */}
+      <ContactShadows position={[0, -0.09, 0]} opacity={0.5} scale={15} blur={1} far={4} color="#000000" resolution={256} />
     </>
   );
 };
@@ -216,147 +243,155 @@ export const HeroScene: React.FC<{
   onShowRules: () => void;
 }> = ({ onCreateRoom, onJoinRoom, playerName, setPlayerName, joinCode, setJoinCode, onSubmitJoin, error, onShowRules }) => {
   const [showJoinInput, setShowJoinInput] = useState(false);
+  const [isHoveringCreate, setIsHoveringCreate] = useState(false);
 
   return (
-    <section id="hero" className="relative w-full h-screen overflow-hidden">
+    <section id="hero" className="relative w-full h-screen overflow-hidden bg-cabo-darker">
       {/* 3D Canvas */}
-      <div className="absolute inset-0 z-0">
-        <Canvas
-          camera={{ position: [0, 0.5, 4], fov: 50 }}
-          gl={{ antialias: true, alpha: true }}
-          style={{ background: 'transparent' }}
+      <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cabo-surface via-cabo-dark to-cabo-darker">
+        <Canvas 
+          shadows 
+          camera={{ position: [0, 2.5, 6], fov: 45 }} 
+          gl={{ antialias: false, alpha: true, preserveDrawingBuffer: false, powerPreference: "high-performance" }}
+          dpr={[1, 1.5]} /* Cap rendering resolution to 1.5x pixel ratio */
         >
-          <Scene3D />
+          <Scene3D isShuffling={isHoveringCreate} isInputFocused={showJoinInput} />
         </Canvas>
       </div>
 
-      {/* Gradient overlay for readability */}
-      <div className="absolute inset-0 z-[1] pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at center, transparent 30%, rgba(6,6,9,0.6) 70%, rgba(6,6,9,0.9) 100%)',
-        }}
-      />
+      {/* Global Error Toast (Top Right) */}
+      <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50 flex flex-col items-end gap-2 pointer-events-none">
+        <AnimatePresence>
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, x: 20, scale: 0.95 }} 
+              animate={{ opacity: 1, x: 0, scale: 1 }} 
+              exit={{ opacity: 0, x: 20, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              className="px-6 py-3 rounded-2xl bg-cabo-dark/90 backdrop-blur-xl border border-cabo-red/60 text-cabo-red text-sm md:text-base font-display font-medium shadow-[0_8px_32px_rgba(231,76,60,0.2)] max-w-[90vw] sm:max-w-sm pointer-events-auto flex items-center gap-3 drop-shadow-md"
+            >
+              <svg className="w-5 h-5 flex-shrink-0 text-cabo-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* HTML Overlay */}
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
-        {/* Title */}
-        <div className="text-center mb-2 pointer-events-auto">
-          <h1
-            className="text-7xl md:text-9xl font-display font-extrabold tracking-wider hero-title"
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6">
+        
+        <div className="text-center mb-0 pointer-events-none select-none z-20 absolute top-[10%] md:top-[8%] lg:top-[12%] px-4 w-full flex flex-col items-center">
+          <h1 
+            className="text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] font-display font-extrabold tracking-[0.2em] text-transparent bg-clip-text"
             style={{
-              background: 'linear-gradient(135deg, #d4af37 0%, #f0d060 30%, #d4af37 50%, #f0d060 70%, #d4af37 100%)',
-              backgroundSize: '200% auto',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              filter: 'drop-shadow(0 0 30px rgba(212,175,55,0.4))',
+              backgroundImage: 'linear-gradient(180deg, #ffffff 0%, #d4af37 100%)',
+              filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.8))',
             }}
           >
             CABO
           </h1>
+          <div className="h-1 w-24 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent mt-4 md:mt-6 opacity-70 rounded-full"></div>
+          <p className="text-[#e8e8f0] text-sm md:text-base tracking-[0.2em] uppercase mt-6 md:mt-8 font-body font-light drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] max-w-lg mx-auto leading-relaxed">
+            Memorize your cards.<br className="md:hidden" /> Get the lowest score to win.
+          </p>
         </div>
 
-        {/* Subtitle */}
-        <p className="text-cabo-textDim text-base md:text-lg font-body max-w-lg text-center mb-10 px-4"
-          style={{ textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>
-          Master your memory. Sabotage your friends. Survive the ultimate game of low scores.
-        </p>
-
-        {/* Name Input */}
-        <div className="mb-6 pointer-events-auto w-72">
-          <input
-            type="text"
-            value={playerName}
-            onChange={e => setPlayerName(e.target.value)}
-            placeholder="Enter your name..."
-            className="input-field text-center text-lg font-display"
-            maxLength={16}
-          />
-        </div>
-
-        {/* Error */}
-        {error && (
-          <div className="mb-4 px-4 py-2 rounded-xl bg-cabo-red/20 border border-cabo-red/40 text-cabo-red text-sm">
-            {error}
+        {/* Start Position Container for bottom elements */}
+        <div className="flex flex-col items-center justify-end w-full h-full pb-6 lg:pb-8 gap-4 md:gap-6 pointer-events-none z-30">
+          
+          {/* Name Input */}
+          <div className="pointer-events-auto w-full max-w-[20rem] px-4 sm:px-0">
+            <input
+              type="text"
+              value={playerName}
+              onChange={e => setPlayerName(e.target.value)}
+              placeholder="Enter your esteemed name..."
+              className="w-full text-center text-base md:text-lg py-3 md:py-4 px-6 rounded-2xl bg-cabo-dark/40 backdrop-blur-md border border-cabo-border/50 shadow-[0_8px_32px_rgba(0,0,0,0.3)] text-cabo-text placeholder-cabo-textDim focus:outline-none focus:ring-2 focus:ring-cabo-accent/50 focus:bg-cabo-dark/60 transition-all font-body font-light"
+              maxLength={16}
+            />
           </div>
-        )}
 
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-4 pointer-events-auto">
-          <button
-            onClick={onCreateRoom}
-            className="hero-btn-primary group relative px-10 py-4 rounded-2xl font-display font-bold text-lg text-cabo-dark overflow-hidden transition-all duration-500"
-          >
-            <span className="relative z-10 flex items-center gap-2">
-              <span className="text-2xl">🎴</span> Create Room
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-cabo-accent via-cabo-accentLight to-cabo-accent bg-[length:200%_100%] animate-shimmer" />
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-              style={{ boxShadow: 'inset 0 0 30px rgba(240,208,96,0.4)' }} />
-          </button>
 
-          {!showJoinInput ? (
+
+          {/* CTA Buttons - Luxury Glassmorphism integrated with Cabo Theme */}
+          <div className="flex flex-col items-center gap-3 md:gap-4 w-full pointer-events-auto max-w-[20rem] relative px-4 sm:px-0">
+            
             <button
-              onClick={() => setShowJoinInput(true)}
-              className="hero-btn-secondary group relative px-10 py-4 rounded-2xl font-display font-bold text-lg text-cabo-text border-2 border-cabo-accent/30 overflow-hidden transition-all duration-500 hover:border-cabo-accent/70"
-              style={{ background: 'rgba(22,22,42,0.7)', backdropFilter: 'blur(10px)' }}
+              onMouseEnter={() => setIsHoveringCreate(true)}
+              onMouseLeave={() => setIsHoveringCreate(false)}
+              onClick={onCreateRoom}
+              className="group relative w-full py-4 px-8 rounded-2xl overflow-hidden transition-all duration-500 bg-gradient-to-br from-[#d4af37] to-[#b38d1d] shadow-[0_8px_32px_rgba(212,175,55,0.3)] hover:shadow-[0_12px_48px_rgba(212,175,55,0.5)] active:scale-[0.98] border border-[#f0d060]/50"
             >
-              <span className="relative z-10 flex items-center gap-2">
-                <span className="text-2xl">🚪</span> Join Room
+              <span className="relative z-10 font-display font-extrabold text-[#060609] tracking-widest text-lg flex items-center justify-center gap-3">
+                CREATE ROOM
               </span>
+              <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out" />
             </button>
-          ) : (
-            <div className="flex gap-2 items-stretch h-14">
-              <input
-                type="text"
-                value={joinCode}
-                onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                placeholder="ENTER CODE"
-                className="input-field text-center tracking-widest text-lg font-display w-44 rounded-xl border-2 border-cabo-accent/30 focus:border-cabo-accent bg-cabo-dark/50"
-                maxLength={6}
-                autoFocus
-                onKeyDown={e => e.key === 'Enter' && onSubmitJoin()}
-              />
-              <button 
-                onClick={onSubmitJoin} 
-                className="hero-btn-primary px-8 rounded-xl font-display font-black text-lg shadow-lg shadow-cabo-accent/20 hover:shadow-cabo-accent/40 transition-all flex items-center justify-center uppercase tracking-wider"
-                style={{
-                  background: 'linear-gradient(135deg, #d4af37, #f0d060)',
-                  color: '#0a0a0f',
-                  textShadow: 'rgba(255, 255, 255, 0.5) 0px 1px 1px'
-                }}
-              >
-                Join
-              </button>
-              <button
-                onClick={() => setShowJoinInput(false)}
-                className="px-4 rounded-xl text-cabo-textDim hover:text-cabo-text bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center"
-              >
-                ✕
-              </button>
+
+            <div className="w-full relative h-[64px]" onMouseLeave={() => showJoinInput && !joinCode && setShowJoinInput(false)}>
+              <AnimatePresence mode="wait">
+                {!showJoinInput ? (
+                  <motion.button
+                    key="join-btn"
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    onMouseEnter={() => setShowJoinInput(true)}
+                    onClick={() => setShowJoinInput(true)}
+                    className="absolute inset-0 w-full py-4 px-8 rounded-2xl bg-cabo-surface/40 backdrop-blur-xl border border-cabo-border/60 text-cabo-text hover:bg-cabo-surface/60 hover:text-white hover:border-cabo-textDim shadow-[0_4px_16px_rgba(0,0,0,0.2)] active:scale-[0.98] font-display font-bold tracking-widest text-lg"
+                  >
+                    JOIN ROOM
+                  </motion.button>
+                ) : (
+                  <motion.div
+                    key="join-input"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    className="absolute top-0 w-full flex flex-col gap-3 bg-cabo-surface/60 backdrop-blur-2xl rounded-2xl p-2 border border-cabo-border shadow-[0_16px_64px_rgba(0,0,0,0.4)]"
+                  >
+                    <input
+                      type="text"
+                      value={joinCode}
+                      onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                      placeholder="ENTER CODE"
+                      className="w-full text-center tracking-[0.4em] text-xl font-display font-bold py-3 px-4 rounded-xl bg-cabo-dark/60 border border-cabo-border focus:outline-none focus:bg-cabo-dark focus:border-cabo-accent transition-all text-white placeholder-cabo-textDim/50 uppercase"
+                      maxLength={6}
+                      autoFocus
+                      onKeyDown={e => e.key === 'Enter' && onSubmitJoin()}
+                    />
+                    <div className="flex gap-2">
+                       <button 
+                        onClick={() => setShowJoinInput(false)}
+                        className="flex-1 py-3 rounded-xl text-cabo-textDim hover:bg-cabo-surfaceLight hover:text-cabo-text transition-colors font-display font-semibold text-sm tracking-wider"
+                      >
+                        CANCEL
+                      </button>
+                      <button 
+                        onClick={onSubmitJoin} 
+                        className="flex-[2] py-3 rounded-xl bg-cabo-accent text-cabo-dark font-display font-bold tracking-widest text-sm shadow-md hover:bg-cabo-accentLight hover:shadow-lg transition-all active:scale-[0.98]"
+                      >
+                        ENTER
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          )}
 
-          <button
-            onClick={onShowRules}
-            className="group relative px-10 py-4 rounded-2xl font-display font-bold text-lg text-cabo-text bg-white/5 border border-white/10 hover:bg-white/10 hover:border-cabo-accent/50 transition-all duration-500 backdrop-blur-md"
-          >
-            <span className="relative z-10 flex items-center gap-2">
-              <span className="text-2xl">📖</span> Game Rules
-            </span>
-          </button>
-        </div>
+            <button
+              onClick={onShowRules}
+              className="mt-6 text-sm font-display tracking-widest text-cabo-textDim hover:text-white uppercase transition-all duration-300 relative group"
+            >
+              How to Play Cabo
+              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-cabo-accent transition-all duration-300 group-hover:w-full"></span>
+            </button>
 
-        {/* Player count badge */}
-        <p className="mt-8 text-cabo-textDim/60 text-xs font-display tracking-widest uppercase">
-          2 – 8 Players · 5 – 30 Min · Memory · Strategy
-        </p>
-      </div>
-
-      {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 pointer-events-none">
-        <span className="text-cabo-textDim/40 text-xs font-display tracking-widest uppercase">Scroll to explore</span>
-        <div className="w-5 h-8 rounded-full border border-cabo-accent/30 flex justify-center pt-1.5">
-          <div className="w-1 h-2 rounded-full bg-cabo-accent/50 animate-bounce" />
+          </div>
         </div>
       </div>
     </section>
