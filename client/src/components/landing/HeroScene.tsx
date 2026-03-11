@@ -213,7 +213,8 @@ export const HeroScene: React.FC<{
   setJoinCode: (code: string) => void;
   onSubmitJoin: () => void;
   error: string | null;
-}> = ({ onCreateRoom, onJoinRoom, playerName, setPlayerName, joinCode, setJoinCode, onSubmitJoin, error }) => {
+  onShowRules: () => void;
+}> = ({ onCreateRoom, onJoinRoom, playerName, setPlayerName, joinCode, setJoinCode, onSubmitJoin, error, onShowRules }) => {
   const [showJoinInput, setShowJoinInput] = useState(false);
 
   return (
@@ -280,7 +281,7 @@ export const HeroScene: React.FC<{
         )}
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 pointer-events-auto">
+        <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-4 pointer-events-auto">
           <button
             onClick={onCreateRoom}
             className="hero-btn-primary group relative px-10 py-4 rounded-2xl font-display font-bold text-lg text-cabo-dark overflow-hidden transition-all duration-500"
@@ -304,28 +305,45 @@ export const HeroScene: React.FC<{
               </span>
             </button>
           ) : (
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-stretch h-14">
               <input
                 type="text"
                 value={joinCode}
                 onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                placeholder="ROOM CODE"
-                className="input-field text-center tracking-[0.3em] text-lg font-display w-40"
+                placeholder="ENTER CODE"
+                className="input-field text-center tracking-widest text-lg font-display w-44 rounded-xl border-2 border-cabo-accent/30 focus:border-cabo-accent bg-cabo-dark/50"
                 maxLength={6}
                 autoFocus
                 onKeyDown={e => e.key === 'Enter' && onSubmitJoin()}
               />
-              <button onClick={onSubmitJoin} className="hero-btn-primary px-6 py-3 rounded-xl font-display font-bold text-cabo-dark">
+              <button 
+                onClick={onSubmitJoin} 
+                className="hero-btn-primary px-8 rounded-xl font-display font-black text-lg shadow-lg shadow-cabo-accent/20 hover:shadow-cabo-accent/40 transition-all flex items-center justify-center uppercase tracking-wider"
+                style={{
+                  background: 'linear-gradient(135deg, #d4af37, #f0d060)',
+                  color: '#0a0a0f',
+                  textShadow: 'rgba(255, 255, 255, 0.5) 0px 1px 1px'
+                }}
+              >
                 Join
               </button>
               <button
                 onClick={() => setShowJoinInput(false)}
-                className="px-3 py-3 rounded-xl text-cabo-textDim hover:text-cabo-text transition-colors"
+                className="px-4 rounded-xl text-cabo-textDim hover:text-cabo-text bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center"
               >
                 ✕
               </button>
             </div>
           )}
+
+          <button
+            onClick={onShowRules}
+            className="group relative px-10 py-4 rounded-2xl font-display font-bold text-lg text-cabo-text bg-white/5 border border-white/10 hover:bg-white/10 hover:border-cabo-accent/50 transition-all duration-500 backdrop-blur-md"
+          >
+            <span className="relative z-10 flex items-center gap-2">
+              <span className="text-2xl">📖</span> Game Rules
+            </span>
+          </button>
         </div>
 
         {/* Player count badge */}

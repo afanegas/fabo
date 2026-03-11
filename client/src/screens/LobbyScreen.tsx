@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
 
 export const LobbyScreen: React.FC = () => {
@@ -14,6 +14,16 @@ export const LobbyScreen: React.FC = () => {
   useEffect(() => {
     initializeSocket();
   }, []);
+
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyCode = () => {
+    if (roomCode) {
+      navigator.clipboard.writeText(roomCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   if (!roomCode || !gameState || gameState.phase !== 'WAITING') return null;
 
@@ -31,18 +41,51 @@ export const LobbyScreen: React.FC = () => {
         <div className="space-y-2">
           <p className="text-cabo-textDim text-sm">Share this code:</p>
           <div className="flex items-center justify-center gap-2">
-            {roomCode.split('').map((char, i) => (
-              <motion.span
-                key={i}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="w-10 h-12 flex items-center justify-center bg-cabo-dark border border-cabo-accent/30 rounded-lg text-2xl font-display font-bold text-cabo-accent"
-              >
-                {char}
-              </motion.span>
-            ))}
+            <div className="flex bg-cabo-darker rounded-xl p-2 border border-cabo-accent/20 cursor-pointer hover:border-cabo-accent/50 transition-colors group" onClick={handleCopyCode}>
+              <div className="flex gap-1 pr-4">
+                {roomCode.split('').map((char, i) => (
+                  <motion.span
+                    key={i}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="w-8 h-10 flex items-center justify-center bg-cabo-dark border border-cabo-accent/30 rounded-md text-xl font-display font-bold text-cabo-accent"
+                  >
+                    {char}
+                  </motion.span>
+                ))}
+              </div>
+              <div className="flex items-center justify-center px-2 text-cabo-textDim group-hover:text-cabo-accent transition-colors border-l border-cabo-border/50 pl-4 relative">
+                <AnimatePresence mode="wait">
+                  {copied ? (
+                    <motion.span
+                      key="copied"
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.5, opacity: 0 }}
+                      className="text-cabo-green text-xl absolute"
+                    >
+                      ✓
+                    </motion.span>
+                  ) : (
+                    <motion.span
+                      key="copy"
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.5, opacity: 0 }}
+                      className="text-xl absolute"
+                    >
+                      📋
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+                <div className="w-5" /> {/* Spacer to keep layout stable */}
+              </div>
+            </div>
           </div>
+          {copied && (
+            <p className="text-cabo-green text-xs font-display absolute w-full text-center left-0 mt-1">Copied to clipboard!</p>
+          )}
         </div>
 
         <div className="space-y-2">

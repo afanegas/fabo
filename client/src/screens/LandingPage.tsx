@@ -4,6 +4,7 @@ import { HeroScene } from "../components/landing/HeroScene";
 import { TutorialSection } from "../components/landing/TutorialSection";
 import { CaboCallSection } from "../components/landing/CaboCallSection";
 import { FooterSection } from "../components/landing/FooterSection";
+import { GameRulesCarousel } from "../components/GameRulesCarousel";
 
 export const LandingPage: React.FC = () => {
   const {
@@ -16,13 +17,16 @@ export const LandingPage: React.FC = () => {
   } = useGameStore();
 
   const [joinCode, setJoinCode] = useState("");
+  const [showRules, setShowRules] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     initializeSocket();
   }, []);
 
   const handleCreateRoom = () => {
-    createRoom();
+    setPendingAction(() => createRoom);
+    setShowRules(true);
   };
 
   const handleJoinRoom = () => {
@@ -33,7 +37,16 @@ export const LandingPage: React.FC = () => {
 
   const handleSubmitJoin = () => {
     if (joinCode.trim()) {
-      joinRoom(joinCode);
+      setPendingAction(() => () => joinRoom(joinCode));
+      setShowRules(true);
+    }
+  };
+
+  const executePendingAction = () => {
+    setShowRules(false);
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
     }
   };
 
@@ -48,6 +61,7 @@ export const LandingPage: React.FC = () => {
         setJoinCode={setJoinCode}
         onSubmitJoin={handleSubmitJoin}
         error={error}
+        onShowRules={() => setShowRules(true)}
       />
 
       <TutorialSection />
@@ -58,6 +72,10 @@ export const LandingPage: React.FC = () => {
         onCreateRoom={handleCreateRoom}
         onJoinRoom={handleJoinRoom}
       />
+
+      {showRules && (
+        <GameRulesCarousel onClose={executePendingAction} />
+      )}
     </div>
   );
 };
