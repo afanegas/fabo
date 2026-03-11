@@ -52,7 +52,7 @@ io.on('connection', (socket: Socket) => {
   console.log(`Player connected: ${socket.id}`);
 
   // ─── Create Room ───
-  socket.on(SocketEvents.CREATE_ROOM, (data: { playerName: string }, callback) => {
+  socket.on(SocketEvents.CREATE_ROOM, (data: { playerName: string }, callback: any) => {
     const code = generateRoomCode();
     const room = new GameRoom(code);
     const playerId = uuidv4();
@@ -74,7 +74,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   // ─── Join Room ───
-  socket.on(SocketEvents.JOIN_ROOM, (data: { roomCode: string; playerName: string }, callback) => {
+  socket.on(SocketEvents.JOIN_ROOM, (data: { roomCode: string; playerName: string }, callback: any) => {
     const room = rooms.get(data.roomCode.toUpperCase());
     if (!room) {
       callback({ success: false, error: 'Room not found' });
@@ -101,7 +101,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   // ─── Start Game ───
-  socket.on(SocketEvents.START_GAME, (_, callback) => {
+  socket.on(SocketEvents.START_GAME, (_: any, callback: any) => {
     const { room, player } = getContext(socket);
     if (!room || !player) return callback?.({ success: false, error: 'Not in a room' });
     if (player.id !== room.hostId) return callback?.({ success: false, error: 'Only host can start' });
@@ -115,7 +115,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   // ─── Peek Initial Card (Memorize Phase) ───
-  socket.on(SocketEvents.PEEK_INITIAL, (data: { cardIndex: number }, callback) => {
+  socket.on(SocketEvents.PEEK_INITIAL, (data: { cardIndex: number }, callback: any) => {
     const { room, player } = getContext(socket);
     if (!room || !player) return callback?.({ success: false });
 
@@ -127,7 +127,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   // ─── Done Memorizing ───
-  socket.on(SocketEvents.DONE_MEMORIZING, (_, callback) => {
+  socket.on(SocketEvents.DONE_MEMORIZING, (_: any, callback: any) => {
     const { room, player } = getContext(socket);
     if (!room || !player) return callback?.({ success: false });
 
@@ -137,7 +137,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   // ─── Draw from Deck ───
-  socket.on(SocketEvents.DRAW_FROM_DECK, (_, callback) => {
+  socket.on(SocketEvents.DRAW_FROM_DECK, (_: any, callback: any) => {
     const { room, player } = getContext(socket);
     if (!room || !player) return callback?.({ success: false, error: 'Not your turn' });
 
@@ -148,7 +148,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   // ─── Draw from Discard ───
-  socket.on(SocketEvents.DRAW_FROM_DISCARD, (_, callback) => {
+  socket.on(SocketEvents.DRAW_FROM_DISCARD, (_: any, callback: any) => {
     const { room, player } = getContext(socket);
     if (!room || !player) return callback?.({ success: false, error: 'Not your turn' });
 
@@ -160,7 +160,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   // ─── Keep Drawn Card (Swap) ───
-  socket.on(SocketEvents.KEEP_DRAWN_CARD, (data: { swapIndices: number[] }, callback) => {
+  socket.on(SocketEvents.KEEP_DRAWN_CARD, (data: { swapIndices: number[] }, callback: any) => {
     const { room, player } = getContext(socket);
     if (!room || !player) return callback?.({ success: false });
 
@@ -170,7 +170,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   // ─── Discard Drawn Card ───
-  socket.on(SocketEvents.DISCARD_DRAWN_CARD, (_, callback) => {
+  socket.on(SocketEvents.DISCARD_DRAWN_CARD, (_: any, callback: any) => {
     const { room, player } = getContext(socket);
     if (!room || !player) return callback?.({ success: false });
 
@@ -187,7 +187,7 @@ io.on('connection', (socket: Socket) => {
     targetPlayerId?: string;
     myCardIndex?: number;
     targetCardIndex?: number;
-  }, callback) => {
+  }, callback: any) => {
     const { room, player } = getContext(socket);
     if (!room || !player) return callback?.({ success: false });
 
@@ -201,7 +201,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   // ─── Skip Action ───
-  socket.on(SocketEvents.SKIP_ACTION, (_, callback) => {
+  socket.on(SocketEvents.SKIP_ACTION, (_: any, callback: any) => {
     const { room, player } = getContext(socket);
     if (!room || !player) return callback?.({ success: false });
 
@@ -211,7 +211,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   // ─── Call Cabo ───
-  socket.on(SocketEvents.CALL_CABO, (_, callback) => {
+  socket.on(SocketEvents.CALL_CABO, (_: any, callback: any) => {
     const { room, player } = getContext(socket);
     if (!room || !player) return callback?.({ success: false });
 
@@ -227,7 +227,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   // ─── Snap ───
-  socket.on(SocketEvents.SNAP, (data: { cardIndex: number }, callback) => {
+  socket.on(SocketEvents.SNAP, (data: { cardIndex: number }, callback: any) => {
     const { room, player } = getContext(socket);
     if (!room || !player) return callback?.({ success: false });
 
@@ -244,7 +244,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   // ─── Next Round ───
-  socket.on(SocketEvents.NEXT_ROUND, (_, callback) => {
+  socket.on(SocketEvents.NEXT_ROUND, (_: any, callback: any) => {
     const { room, player } = getContext(socket);
     if (!room || !player) return callback?.({ success: false });
 
@@ -289,7 +289,7 @@ function getContext(socket: Socket): { room: GameRoom | null; player: any | null
 }
 
 // ─── Health Check ───
-app.get('/health', (_, res) => res.json({ status: 'ok' }));
+app.get('/health', (_: any, res: any) => res.json({ status: 'ok' }));
 
 // ─── Start Server ───
 const PORT = process.env.PORT || 3001;
