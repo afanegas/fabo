@@ -1,23 +1,21 @@
-import { Card, Rank, Suit, PlayerRoundResult, RoundResult } from '../../shared/types';
+import { Card, Rank, PlayerRoundResult, RoundResult, ActionType } from '../../shared/types';
 import { Player } from './Player';
 import { CONFIG } from '../../shared/types';
 
-const RED_SUITS: Suit[] = ['hearts', 'diamonds'];
-
 export function getCardValue(card: Card): number {
-  if (card.rank === 'JOKER') return 0;
-  if (card.rank === 'K' && card.suit && RED_SUITS.includes(card.suit)) return 0;
+  if (card.rank === 'K') return 0;
   const valueMap: Record<Rank, number> = {
     'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6,
-    '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'JOKER': 0
+    '7': 7, '8': 8, '9': 9, '10': 10, 'J': 10, 'Q': 10, 'K': 0
   };
   return valueMap[card.rank];
 }
 
-export function getActionType(rank: Rank): 'PEEK' | 'SPY' | 'SWAP' | null {
+export function getActionType(rank: Rank): ActionType | null {
   if (rank === '7' || rank === '8') return 'PEEK';
   if (rank === '9' || rank === '10') return 'SPY';
-  if (rank === 'J' || rank === 'Q') return 'SWAP';
+  if (rank === 'J') return 'SWAP';
+  if (rank === 'Q') return 'LOOK_AND_SWAP';
   return null;
 }
 
@@ -50,7 +48,7 @@ export function calculateRoundResults(players: Player[], caboCallerId: string | 
     specialWinner.roundScore = 0;
     for (const r of results) {
       if (r.playerId !== specialWinner.playerId) {
-        r.roundScore = -CONFIG.SPECIAL_WIN_PENALTY;
+        r.roundScore = CONFIG.SPECIAL_WIN_PENALTY;
       }
     }
     return { playerResults: results, winnerId: specialWinner.playerId };
@@ -60,32 +58,33 @@ export function calculateRoundResults(players: Player[], caboCallerId: string | 
   const sortedByTotal = [...results].sort((a, b) => a.handTotal - b.handTotal);
   const lowestTotal = sortedByTotal[0].handTotal;
 
-  // Find winner: lowest total wins.  In case of tie, cabo caller wins the tie
+  // Find winner: lowest total wins
+  // Cabo caller must be STRICTLY lowest to win — ties = penalty
   const tiedForLowest = sortedByTotal.filter(r => r.handTotal === lowestTotal);
   let winnerId: string;
 
   if (tiedForLowest.length === 1) {
     winnerId = tiedForLowest[0].playerId;
   } else {
-    // Tie: cabo caller wins if they're tied for lowest
-    const caboCallerInTie = tiedForLowest.find(r => r.playerId === caboCallerId);
-    winnerId = caboCallerInTie ? caboCallerInTie.playerId : tiedForLowest[0].playerId;
+    // Tie: cabo caller does NOT win ties — first non-caller with lowest wins
+    const nonCallerWinner = tiedForLowest.find(r => r.playerId !== caboCallerId);
+    winnerId = nonCallerWinner ? nonCallerWinner.playerId : tiedForLowest[0].playerId;
   }
 
-  // Check cabo penalty: if caller doesn't have lowest, they get penalty
+  // Check cabo penalty: caller must be strictly lowest, otherwise penalty
   const caboCaller = results.find(r => r.playerId === caboCallerId);
   if (caboCaller && caboCaller.playerId !== winnerId) {
     caboCaller.caboPenalty = true;
   }
 
-  // Assign scores
+  // Assign scores (positive — lower is better)
   for (const r of results) {
     if (r.playerId === winnerId) {
       r.roundScore = 0;
     } else if (r.caboPenalty) {
-      r.roundScore = -(r.handTotal + CONFIG.CABO_PENALTY);
+      r.roundScore = r.handTotal + CONFIG.CABO_PENALTY;
     } else {
-      r.roundScore = -r.handTotal;
+      r.roundScore = r.handTotal;
     }
   }
 

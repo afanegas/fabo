@@ -10,7 +10,7 @@ export const ScoreBoard: React.FC = () => {
 
   // Find overall winner for game over
   const sortedTotals = Object.entries(gameState.totalScores)
-    .sort(([, a], [, b]) => b - a); // higher (less negative) is better
+    .sort(([, a], [, b]) => a - b); // lower is better (positive scores)
   const overallWinnerId = sortedTotals[0]?.[0];
 
   return (
@@ -34,7 +34,7 @@ export const ScoreBoard: React.FC = () => {
           {/* Round Results */}
           <div className="space-y-3">
             {gameState.roundResults.playerResults
-              .sort((a, b) => b.roundScore - a.roundScore)
+              .sort((a, b) => a.roundScore - b.roundScore)
               .map((result, index) => {
                 const isWinner = result.playerId === gameState.roundResults!.winnerId;
                 const isMe = result.playerId === playerId;
@@ -77,14 +77,14 @@ export const ScoreBoard: React.FC = () => {
                             : 'bg-slate-500/10 text-slate-300'
                           }
                         `}>
-                          {card.rank === 'JOKER' ? '🃏' : `${card.rank}${card.suit ? ({'hearts':'♥','diamonds':'♦','clubs':'♣','spades':'♠'})[card.suit] : ''}`}
+                          {`${card.rank}${({'hearts':'♥','diamonds':'♦','clubs':'♣','spades':'♠'})[card.suit]}`}
                         </span>
                       ))}
                     </div>
 
                     <div className="flex gap-2 mt-1 text-[10px] text-cabo-textDim">
                       <span>Hand: {result.handTotal}</span>
-                      {result.caboPenalty && <span className="text-cabo-red">+5 Cabo penalty</span>}
+                      {result.caboPenalty && <span className="text-cabo-red">+10 Cabo penalty</span>}
                       {result.specialWin && <span className="text-cabo-accent">✨ Special Win!</span>}
                     </div>
                   </motion.div>
@@ -109,7 +109,7 @@ export const ScoreBoard: React.FC = () => {
                         {isGameOver && pid === overallWinnerId && ' 🏆'}
                       </span>
                     </span>
-                    <span className={`font-display font-bold ${total >= 0 ? 'text-cabo-green' : 'text-cabo-red'}`}>
+                    <span className={`font-display font-bold ${total === 0 ? 'text-cabo-green' : 'text-cabo-red'}`}>
                       {total}
                     </span>
                   </div>

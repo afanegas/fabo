@@ -1,14 +1,14 @@
 // ─── Card Types ───
 export type Suit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
-export type Rank = 'A' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'JOKER';
+export type Rank = 'A' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K';
 
 export interface Card {
   id: string;
   rank: Rank;
-  suit: Suit | null; // null for Jokers
+  suit: Suit;
 }
 
-export type ActionType = 'PEEK' | 'SPY' | 'SWAP';
+export type ActionType = 'PEEK' | 'SPY' | 'SWAP' | 'LOOK_AND_SWAP';
 
 // ─── Game Phases ───
 export type GamePhase =
@@ -47,6 +47,7 @@ export interface ClientGameState {
   discardTop: Card | null;
   deckCount: number;
   drawnCard: Card | null;        // only set when the player drew from deck
+  drawnFromDiscard: boolean;     // true if drawn card came from discard pile
   actionType: ActionType | null; // pending action after discard
   scores: Record<string, number[]>; // playerId -> round scores
   totalScores: Record<string, number>;
@@ -122,10 +123,10 @@ export const CONFIG = {
   MAX_PLAYERS: 4,
   CARDS_PER_PLAYER: 4,
   INITIAL_PEEK_COUNT: 2,
-  SNAP_WINDOW_MS: 2000,
+  SNAP_WINDOW_MS: 5000,
   MEMORIZE_TIME_MS: 10000,
-  CABO_PENALTY: 5,
+  CABO_PENALTY: 10,
   SPECIAL_WIN_PENALTY: 50,
-  GAME_END_SCORE: 101,
+  GAME_END_SCORE: 100,
   ROOM_CODE_LENGTH: 6,
 } as const;

@@ -18,9 +18,6 @@ export class Deck {
         this.cards.push({ id: uuidv4(), rank, suit });
       }
     }
-    // Add 2 Jokers
-    this.cards.push({ id: uuidv4(), rank: 'JOKER', suit: null });
-    this.cards.push({ id: uuidv4(), rank: 'JOKER', suit: null });
     this.shuffle();
   }
 

@@ -13,19 +13,15 @@ const DiscardTopCard: React.FC<{ card: CardType }> = ({ card }) => {
   return (
     <div className={`absolute inset-0 p-1.5 flex flex-col justify-between ${isRed ? 'text-red-500' : 'text-gray-800'}`}>
       <div className="flex flex-col items-start leading-none">
-        <span className="font-bold font-display text-sm">{card.rank === 'JOKER' ? '★' : card.rank}</span>
-        {card.suit && <span className="text-[0.5em]">{SUIT_SYMBOLS[card.suit]}</span>}
+        <span className="font-bold font-display text-sm">{card.rank}</span>
+        <span className="text-[0.5em]">{SUIT_SYMBOLS[card.suit]}</span>
       </div>
       <div className="flex items-center justify-center flex-1">
-        {card.rank === 'JOKER' ? (
-          <span className="text-xl">🃏</span>
-        ) : (
-          card.suit && <span className="text-xl">{SUIT_SYMBOLS[card.suit]}</span>
-        )}
+        <span className="text-xl">{SUIT_SYMBOLS[card.suit]}</span>
       </div>
       <div className="flex flex-col items-end leading-none rotate-180">
-        <span className="font-bold font-display text-sm">{card.rank === 'JOKER' ? '★' : card.rank}</span>
-        {card.suit && <span className="text-[0.5em]">{SUIT_SYMBOLS[card.suit]}</span>}
+        <span className="font-bold font-display text-sm">{card.rank}</span>
+        <span className="text-[0.5em]">{SUIT_SYMBOLS[card.suit]}</span>
       </div>
     </div>
   );
@@ -48,6 +44,7 @@ export const DrawAndDiscard: React.FC = () => {
   const canDraw = isMyTurn && !drawnCard && !actionMode &&
     !gameState.snapWindowActive &&
     (gameState.phase === 'PLAYING' || gameState.phase === 'CABO_CALLED');
+  const canDiscard = drawnCard && !gameState.drawnFromDiscard;
 
   return (
     <div className="flex items-center gap-6 justify-center">
@@ -83,12 +80,16 @@ export const DrawAndDiscard: React.FC = () => {
             className="flex flex-col items-center gap-2"
           >
             <Card card={drawnCard} size="lg" glowing />
-            <button
-              onClick={discardDrawnCard}
-              className="btn-secondary text-xs px-3 py-1.5"
-            >
-              Discard
-            </button>
+            {canDiscard ? (
+              <button
+                onClick={discardDrawnCard}
+                className="btn-secondary text-xs px-3 py-1.5"
+              >
+                Discard
+              </button>
+            ) : (
+              <span className="text-cabo-textDim text-[10px] font-display">Must swap</span>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

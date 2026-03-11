@@ -82,18 +82,14 @@ export const Card: React.FC<CardProps> = ({
         // Face-up card
         <div className={`absolute inset-0 p-1.5 flex flex-col justify-between ${suit ? SUIT_COLORS[suit] : 'text-slate-200'}`}>
           <div className="flex flex-col items-start leading-none">
-            <span className="font-bold font-display">{rank === 'JOKER' ? '★' : rank}</span>
+            <span className="font-bold font-display">{rank}</span>
             {suit && <span className="text-[0.6em]">{SUIT_SYMBOLS[suit]}</span>}
           </div>
           <div className="flex items-center justify-center flex-1">
-            {rank === 'JOKER' ? (
-              <span className="text-2xl">🃏</span>
-            ) : (
-              suit && <span className="text-2xl">{SUIT_SYMBOLS[suit]}</span>
-            )}
+            {suit && <span className="text-2xl">{SUIT_SYMBOLS[suit]}</span>}
           </div>
           <div className="flex flex-col items-end leading-none rotate-180">
-            <span className="font-bold font-display">{rank === 'JOKER' ? '★' : rank}</span>
+            <span className="font-bold font-display">{rank}</span>
             {suit && <span className="text-[0.6em]">{SUIT_SYMBOLS[suit]}</span>}
           </div>
         </div>
