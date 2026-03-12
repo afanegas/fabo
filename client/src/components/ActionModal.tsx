@@ -1,109 +1,32 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGameStore } from '../store/gameStore';
+import { useActionModal } from '../hooks/useActionModal';
 
 export const ActionModal: React.FC = () => {
-  const { actionMode, gameState, playerId, selectedCardIndex, setSelectedCardIndex, useAction, skipAction } = useGameStore();
-  const [targetPlayerId, setTargetPlayerId] = useState<string | null>(null);
-  const [targetCardIndex, setTargetCardIndex] = useState<number | null>(null);
-
-  // LOOK_AND_SWAP state
-  const [lookSwapPhase, setLookSwapPhase] = useState<'look' | 'swap'>('look');
-  const [lookTarget, setLookTarget] = useState<'self' | 'opponent' | null>(null);
+  const {
+    actionMode,
+    gameState,
+    playerId,
+    selectedCardIndex,
+    setSelectedCardIndex,
+    targetPlayerId,
+    setTargetPlayerId,
+    targetCardIndex,
+    setTargetCardIndex,
+    lookSwapPhase,
+    setLookSwapPhase,
+    lookTarget,
+    setLookTarget,
+    title,
+    description,
+    canConfirm,
+    handleConfirm,
+    handleSkip
+  } = useActionModal();
 
   if (!actionMode || !gameState) return null;
 
   const opponents = gameState.players.filter(p => p.id !== playerId);
-
-  const handleConfirm = () => {
-    if (actionMode === 'PEEK' && selectedCardIndex !== null) {
-      useAction({ myCardIndex: selectedCardIndex });
-      setSelectedCardIndex(null);
-    } else if (actionMode === 'SPY' && targetPlayerId && targetCardIndex !== null) {
-      useAction({ targetPlayerId, targetCardIndex });
-      setTargetPlayerId(null);
-      setTargetCardIndex(null);
-    } else if (actionMode === 'SWAP' && selectedCardIndex !== null && targetPlayerId && targetCardIndex !== null) {
-      useAction({ myCardIndex: selectedCardIndex, targetPlayerId, targetCardIndex });
-      setSelectedCardIndex(null);
-      setTargetPlayerId(null);
-      setTargetCardIndex(null);
-    } else if (actionMode === 'LOOK_AND_SWAP') {
-      if (lookSwapPhase === 'look') {
-        // Phase 1: Send look action
-        if (lookTarget === 'self' && selectedCardIndex !== null) {
-          useAction({ myCardIndex: selectedCardIndex }).then(() => {
-            setLookSwapPhase('swap');
-            setSelectedCardIndex(null);
-            setLookTarget(null);
-          });
-        } else if (lookTarget === 'opponent' && targetPlayerId && targetCardIndex !== null) {
-          useAction({ targetPlayerId, targetCardIndex }).then(() => {
-            setLookSwapPhase('swap');
-            setTargetPlayerId(null);
-            setTargetCardIndex(null);
-            setLookTarget(null);
-          });
-        }
-      } else {
-        // Phase 2: Send swap action
-        if (selectedCardIndex !== null && targetPlayerId && targetCardIndex !== null) {
-          useAction({ myCardIndex: selectedCardIndex, targetPlayerId, targetCardIndex });
-          resetState();
-        }
-      }
-    }
-  };
-
-  const resetState = () => {
-    setSelectedCardIndex(null);
-    setTargetPlayerId(null);
-    setTargetCardIndex(null);
-    setLookSwapPhase('look');
-    setLookTarget(null);
-  };
-
-  const handleSkip = () => {
-    if (actionMode === 'LOOK_AND_SWAP' && lookSwapPhase === 'swap') {
-      // In phase 2 of LOOK_AND_SWAP, skip means "don't swap"
-      useAction({});
-      resetState();
-    } else {
-      skipAction();
-      resetState();
-    }
-  };
-
-  const titles: Record<string, string> = {
-    PEEK: '👁 Peek — Look at one of your cards',
-    SPY: '🔍 Spy — Look at an opponent\'s card',
-    SWAP: '🔄 Swap — Swap a card with an opponent',
-    LOOK_AND_SWAP: lookSwapPhase === 'look'
-      ? '👁 Queen — Look at one card'
-      : '🔄 Queen — Now swap (or skip)',
-  };
-
-  const descriptions: Record<string, string> = {
-    PEEK: 'Select one of your cards to peek at',
-    SPY: 'Select an opponent, then choose one of their cards',
-    SWAP: 'Select one of your cards and one opponent\'s card to swap (blind)',
-    LOOK_AND_SWAP: lookSwapPhase === 'look'
-      ? 'Choose a card to look at (yours or an opponent\'s)'
-      : 'Now swap any of your cards with an opponent\'s card, or skip',
-  };
-
-  let canConfirm = false;
-  if (actionMode === 'PEEK') canConfirm = selectedCardIndex !== null;
-  if (actionMode === 'SPY') canConfirm = !!targetPlayerId && targetCardIndex !== null;
-  if (actionMode === 'SWAP') canConfirm = selectedCardIndex !== null && !!targetPlayerId && targetCardIndex !== null;
-  if (actionMode === 'LOOK_AND_SWAP') {
-    if (lookSwapPhase === 'look') {
-      canConfirm = (lookTarget === 'self' && selectedCardIndex !== null) ||
-        (lookTarget === 'opponent' && !!targetPlayerId && targetCardIndex !== null);
-    } else {
-      canConfirm = selectedCardIndex !== null && !!targetPlayerId && targetCardIndex !== null;
-    }
-  }
 
   return (
     <AnimatePresence>
@@ -120,10 +43,10 @@ export const ActionModal: React.FC = () => {
           className="glass-panel p-6 max-w-sm w-full space-y-4 max-h-[85vh] overflow-y-auto"
         >
           <h3 className="text-lg font-display font-bold text-cabo-accent">
-            {titles[actionMode]}
+            {title}
           </h3>
           <p className="text-cabo-textDim text-sm">
-            {descriptions[actionMode]}
+            {description}
           </p>
 
           {/* PEEK — select own card */}
@@ -402,3 +325,4 @@ export const ActionModal: React.FC = () => {
     </AnimatePresence>
   );
 };
+

@@ -1,10 +1,10 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGameStore } from '../store/gameStore';
+import { usePeekOverlay } from '../hooks/usePeekOverlay';
 import { Card } from './Card';
 
 export const PeekOverlay: React.FC = () => {
-  const { peekedCard, showPeekedCard, clearPeekedCard } = useGameStore();
+  const { peekedCard, showPeekedCard, clearPeekedCard } = usePeekOverlay();
 
   return (
     <AnimatePresence>

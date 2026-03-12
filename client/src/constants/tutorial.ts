@@ -1,0 +1,33 @@
+export const TUTORIAL_CARDS = [
+  { value: '3', suit: 'hearts' },
+  { value: 'K', suit: 'spades' },
+  { value: '5', suit: 'diamonds' },
+  { value: '8', suit: 'clubs' },
+];
+
+export const TUTORIAL_ACTIONS = [
+  {
+    icon: '👁',
+    name: 'Peek',
+    cards: '7 & 8',
+    description: 'Look at one of your own face-down cards. Knowledge is power — but can you remember?',
+    color: '#d4af37',
+    gradient: 'from-amber-500/20 to-yellow-600/10',
+  },
+  {
+    icon: '🔍',
+    name: 'Spy',
+    cards: '9 & 10',
+    description: "Secretly look at one of an opponent's cards. Use their secrets against them.",
+    color: '#2ecc71',
+    gradient: 'from-emerald-500/20 to-green-600/10',
+  },
+  {
+    icon: '🔄',
+    name: 'Swap',
+    cards: '11 & 12',
+    description: "Blind swap — exchange one of your cards with an opponent's. Neither player sees what moves.",
+    color: '#6c3483',
+    gradient: 'from-purple-500/20 to-violet-600/10',
+  },
+];

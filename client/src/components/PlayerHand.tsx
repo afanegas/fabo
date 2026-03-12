@@ -1,69 +1,21 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card } from './Card';
-import { useGameStore } from '../store/gameStore';
+import { usePlayerHand } from '../hooks/usePlayerHand';
 
 export const PlayerHand: React.FC = () => {
   const {
     gameState,
-    playerId,
     drawnCard,
     selectedCardIndex,
-    setSelectedCardIndex,
     actionMode,
-    keepDrawnCard,
-    snap,
-    peekInitialCard,
-    useAction,
-  } = useGameStore();
+    isMemorize,
+    snapActive,
+    handleCardClick,
+    handleSwapConfirm,
+  } = usePlayerHand();
 
   if (!gameState) return null;
-
-  const isMyTurn = gameState.currentTurnPlayerId === playerId;
-  const isMemorize = gameState.phase === 'MEMORIZE';
-  const snapActive = gameState.snapWindowActive;
-  const hasDrawn = !!drawnCard;
-
-  const handleCardClick = (index: number) => {
-    if (isMemorize) {
-      peekInitialCard(index);
-      return;
-    }
-
-    if (actionMode === 'PEEK') {
-      useAction({ myCardIndex: index });
-      return;
-    }
-
-    if (actionMode === 'SWAP') {
-      if (selectedCardIndex === null) {
-        setSelectedCardIndex(index);
-      } else if (selectedCardIndex === index) {
-        setSelectedCardIndex(null);
-      }
-      return;
-    }
-
-    if (snapActive) {
-      snap(index);
-      return;
-    }
-
-    if (hasDrawn && isMyTurn) {
-      if (selectedCardIndex === index) {
-        setSelectedCardIndex(null);
-      } else {
-        setSelectedCardIndex(index);
-      }
-      return;
-    }
-  };
-
-  const handleSwapConfirm = () => {
-    if (selectedCardIndex !== null && drawnCard) {
-      keepDrawnCard([selectedCardIndex]);
-    }
-  };
 
   return (
     <div className="w-full">

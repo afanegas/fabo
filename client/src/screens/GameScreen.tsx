@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
+import { useGameActions } from '../hooks/useGameActions';
 import { PlayerHand } from '../components/PlayerHand';
 import { OpponentDisplay } from '../components/OpponentDisplay';
 import { DrawAndDiscard } from '../components/DrawAndDiscard';
@@ -10,40 +11,25 @@ import { PeekOverlay } from '../components/PeekOverlay';
 
 export const GameScreen: React.FC = () => {
   const {
-    gameState,
-    playerId,
     caboAlertActive,
-    drawnCard,
-    actionMode,
     error,
     snapNotification,
-    callCabo,
-    doneMemorizing,
-    useAction,
-    selectedCardIndex,
   } = useGameStore();
 
+  const {
+    gameState,
+    drawnCard,
+    actionMode,
+    isMyTurn,
+    opponents,
+    canCallCabo,
+    isMemorize,
+    handleOpponentCardClick,
+    callCabo,
+    doneMemorizing,
+  } = useGameActions();
+
   if (!gameState) return null;
-
-  const isMyTurn = gameState.currentTurnPlayerId === playerId;
-  const opponents = gameState.players.filter(p => p.id !== playerId);
-  const me = gameState.players.find(p => p.id === playerId);
-  const canCallCabo = isMyTurn && !drawnCard && !actionMode &&
-    !gameState.snapWindowActive &&
-    gameState.phase === 'PLAYING';
-  const isMemorize = gameState.phase === 'MEMORIZE';
-
-  const handleOpponentCardClick = (targetPlayerId: string, cardIndex: number) => {
-    if (actionMode === 'SPY') {
-      useAction({ targetPlayerId, targetCardIndex: cardIndex });
-    } else if (actionMode === 'SWAP' && selectedCardIndex !== null) {
-      useAction({
-        myCardIndex: selectedCardIndex,
-        targetPlayerId,
-        targetCardIndex: cardIndex,
-      });
-    }
-  };
 
   return (
     <div className={`

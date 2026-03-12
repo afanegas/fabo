@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 
+import { TUTORIAL_CARDS, TUTORIAL_ACTIONS } from '../../constants/tutorial';
+import { SUIT_ICONS, SUIT_COLORS } from '../../constants/cards';
+
 // ─── Hook: Section visibility ───
 const useSectionInView = (threshold = 0.3) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -17,8 +20,7 @@ const FlipCard: React.FC<{
   onPeek: () => void;
   isPeeked: boolean;
 }> = ({ value, suit, index, canPeek, onPeek, isPeeked }) => {
-  const suitSymbols: Record<string, string> = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' };
-  const isRed = suit === 'hearts' || suit === 'diamonds';
+  const Icon = SUIT_ICONS[suit as keyof typeof SUIT_ICONS];
 
   return (
     <motion.div
@@ -58,23 +60,24 @@ const FlipCard: React.FC<{
 
         {/* Face up */}
         <div
-          className={`flip-card-face absolute inset-0 rounded-xl border shadow-xl p-2 flex flex-col justify-between ${isRed ? 'border-red-500/30' : 'border-gray-400/30'}`}
+          className={`flip-card-face absolute inset-0 rounded-xl border shadow-xl p-2 flex flex-col justify-between ${SUIT_COLORS[suit as keyof typeof SUIT_COLORS] || 'text-gray-800'}`}
           style={{
             backfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
             background: 'linear-gradient(to br, #ffffff, #f0f0f0)',
+            borderColor: suit === 'hearts' || suit === 'diamonds' ? 'rgba(239,68,68,0.3)' : 'rgba(156,163,175,0.3)',
           }}
         >
-          <div className={`font-display font-bold text-lg ${isRed ? 'text-red-500' : 'text-gray-800'}`}>
+          <div className={`font-display font-bold text-lg flex flex-col items-start leading-none`}>
             {value}
-            <div className="text-xs">{suitSymbols[suit]}</div>
+            <Icon size={12} fill="currentColor" strokeWidth={1} />
           </div>
-          <div className={`text-3xl text-center ${isRed ? 'text-red-500' : 'text-gray-800'}`}>
-            {suitSymbols[suit]}
+          <div className="flex items-center justify-center flex-1">
+            <Icon size={28} fill="currentColor" strokeWidth={1} />
           </div>
-          <div className={`font-display font-bold text-lg text-right rotate-180 ${isRed ? 'text-red-500' : 'text-gray-800'}`}>
+          <div className={`font-display font-bold text-lg flex flex-col items-end leading-none rotate-180`}>
             {value}
-            <div className="text-xs">{suitSymbols[suit]}</div>
+            <Icon size={12} fill="currentColor" strokeWidth={1} />
           </div>
         </div>
       </motion.div>
@@ -88,13 +91,6 @@ const MemoryPhase: React.FC = () => {
   const [peekedCards, setPeekedCards] = useState<Set<number>>(new Set());
   const [peekCount, setPeekCount] = useState(0);
   const [showMessage, setShowMessage] = useState(false);
-
-  const cards = [
-    { value: '3', suit: 'hearts' },
-    { value: 'K', suit: 'spades' },
-    { value: '5', suit: 'diamonds' },
-    { value: '8', suit: 'clubs' },
-  ];
 
   useEffect(() => {
     if (!isInView) {
@@ -147,7 +143,7 @@ const MemoryPhase: React.FC = () => {
         transition={{ delay: 0.3, duration: 0.6 }}
         className="flex gap-3 md:gap-5 mb-8"
       >
-        {cards.map((card, i) => (
+        {TUTORIAL_CARDS.map((card, i) => (
           <FlipCard
             key={i}
             value={card.value}
@@ -236,7 +232,7 @@ const ActionArsenal: React.FC = () => {
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl w-full">
-        {actions.map((action, i) => (
+        {TUTORIAL_ACTIONS.map((action, i) => (
           <motion.div
             key={action.name}
             initial={{ opacity: 0, y: 50, rotateX: 15 }}

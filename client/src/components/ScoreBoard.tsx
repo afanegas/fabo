@@ -1,17 +1,20 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGameStore } from '../store/gameStore';
+import { useScoreBoard } from '../hooks/useScoreBoard';
+import { SUIT_ICONS } from '../constants/cards';
 
 export const ScoreBoard: React.FC = () => {
-  const { gameState, showScoreBoard, nextRound, playerId } = useGameStore();
+  const {
+    gameState,
+    showScoreBoard,
+    isGameOver,
+    sortedTotals,
+    overallWinnerId,
+    playerId,
+    nextRound,
+  } = useScoreBoard();
+
   if (!showScoreBoard || !gameState?.roundResults) return null;
-
-  const isGameOver = gameState.phase === 'GAME_OVER';
-
-  // Find overall winner for game over
-  const sortedTotals = Object.entries(gameState.totalScores)
-    .sort(([, a], [, b]) => a - b); // lower is better (positive scores)
-  const overallWinnerId = sortedTotals[0]?.[0];
 
   return (
     <AnimatePresence>
@@ -71,13 +74,18 @@ export const ScoreBoard: React.FC = () => {
                     <div className="flex gap-1 mt-2 flex-wrap">
                       {result.cards.map((card, ci) => (
                         <span key={ci} className={`
-                          text-xs px-1.5 py-0.5 rounded
+                          flex items-center text-xs px-1.5 py-0.5 rounded
                           ${card.suit && ['hearts', 'diamonds'].includes(card.suit)
-                            ? 'bg-red-500/10 text-red-400'
-                            : 'bg-slate-500/10 text-slate-300'
+                            ? 'bg-red-500/10 text-red-500'
+                            : 'bg-slate-500/10 text-slate-800'
                           }
                         `}>
-                          {`${card.rank}${({'hearts':'♥','diamonds':'♦','clubs':'♣','spades':'♠'})[card.suit]}`}
+                          {card.rank}
+                          {card.suit && React.createElement(SUIT_ICONS[card.suit], {
+                            className: "inline-block w-3 h-3 ml-0.5",
+                            strokeWidth: 2.5,
+                            fill: "currentColor"
+                          })}
                         </span>
                       ))}
                     </div>

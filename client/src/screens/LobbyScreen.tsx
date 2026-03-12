@@ -1,33 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGameStore } from '../store/gameStore';
+import { useLobbyScreen } from '../hooks/useLobbyScreen';
 
 export const LobbyScreen: React.FC = () => {
   const {
     roomCode,
     gameState,
     playerId,
+    copied,
+    isHost,
+    handleCopyCode,
     startGame,
-    initializeSocket,
-  } = useGameStore();
-
-  useEffect(() => {
-    initializeSocket();
-  }, []);
-
-  const [copied, setCopied] = useState(false);
-
-  const handleCopyCode = () => {
-    if (roomCode) {
-      navigator.clipboard.writeText(roomCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
+  } = useLobbyScreen();
 
   if (!roomCode || !gameState || gameState.phase !== 'WAITING') return null;
-
-  const isHost = gameState.players[0]?.id === playerId;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 table-felt">

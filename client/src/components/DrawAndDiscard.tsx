@@ -1,27 +1,25 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGameStore } from '../store/gameStore';
 import { Card } from './Card';
 import { Card as CardType, Suit } from '@shared/types';
-
-const SUIT_SYMBOLS: Record<Suit, string> = {
-  hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠',
-};
+import { useDrawAndDiscard } from '../hooks/useDrawAndDiscard';
+import { SUIT_ICONS, SUIT_COLORS } from '../constants/cards';
 
 const DiscardTopCard: React.FC<{ card: CardType }> = ({ card }) => {
-  const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
+  const Icon = SUIT_ICONS[card.suit];
+  
   return (
-    <div className={`absolute inset-0 p-1.5 flex flex-col justify-between ${isRed ? 'text-red-500' : 'text-gray-800'}`}>
-      <div className="flex flex-col items-start leading-none">
+    <div className={`absolute inset-0 p-1.5 flex flex-col justify-between ${SUIT_COLORS[card.suit]}`}>
+      <div className="flex flex-col items-start leading-none gap-0.5">
         <span className="font-bold font-display text-sm">{card.rank}</span>
-        <span className="text-[0.5em]">{SUIT_SYMBOLS[card.suit]}</span>
+        <Icon size={12} fill="currentColor" strokeWidth={1} />
       </div>
       <div className="flex items-center justify-center flex-1">
-        <span className="text-xl">{SUIT_SYMBOLS[card.suit]}</span>
+        <Icon size={24} fill="currentColor" strokeWidth={1} />
       </div>
-      <div className="flex flex-col items-end leading-none rotate-180">
+      <div className="flex flex-col items-end leading-none gap-0.5 rotate-180">
         <span className="font-bold font-display text-sm">{card.rank}</span>
-        <span className="text-[0.5em]">{SUIT_SYMBOLS[card.suit]}</span>
+        <Icon size={12} fill="currentColor" strokeWidth={1} />
       </div>
     </div>
   );
@@ -30,21 +28,15 @@ const DiscardTopCard: React.FC<{ card: CardType }> = ({ card }) => {
 export const DrawAndDiscard: React.FC = () => {
   const {
     gameState,
-    playerId,
     drawnCard,
+    canDraw,
+    canDiscard,
     drawFromDeck,
     drawFromDiscard,
     discardDrawnCard,
-    actionMode,
-  } = useGameStore();
+  } = useDrawAndDiscard();
 
   if (!gameState) return null;
-
-  const isMyTurn = gameState.currentTurnPlayerId === playerId;
-  const canDraw = isMyTurn && !drawnCard && !actionMode &&
-    !gameState.snapWindowActive &&
-    (gameState.phase === 'PLAYING' || gameState.phase === 'CABO_CALLED');
-  const canDiscard = drawnCard && !gameState.drawnFromDiscard;
 
   return (
     <div className="flex items-center gap-6 justify-center">

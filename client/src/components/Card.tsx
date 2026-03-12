@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card as CardType, PlayerCardInfo, Rank, Suit } from '@shared/types';
+import { SUIT_ICONS, SUIT_COLORS, CARD_SIZE_CLASSES } from '../constants/cards';
 
 interface CardProps {
   card?: CardType | PlayerCardInfo | null;
@@ -12,26 +13,6 @@ interface CardProps {
   index?: number;
   disabled?: boolean;
 }
-
-const SUIT_SYMBOLS: Record<Suit, string> = {
-  hearts: '♥',
-  diamonds: '♦',
-  clubs: '♣',
-  spades: '♠',
-};
-
-const SUIT_COLORS: Record<Suit, string> = {
-  hearts: 'text-red-500',
-  diamonds: 'text-red-500',
-  clubs: 'text-gray-800',
-  spades: 'text-gray-800',
-};
-
-const sizeClasses = {
-  sm: 'w-14 h-20 text-xs',
-  md: 'w-20 h-28 text-sm',
-  lg: 'w-24 h-36 text-base',
-};
 
 export const Card: React.FC<CardProps> = ({
   card,
@@ -47,6 +28,12 @@ export const Card: React.FC<CardProps> = ({
   const rank = card && 'rank' in card ? card.rank : null;
   const suit = card && 'suit' in card ? card.suit : null;
 
+  const renderSuitIcon = (suit: Suit | null, size: number) => {
+    if (!suit) return null;
+    const Icon = SUIT_ICONS[suit];
+    return <Icon size={size} fill="currentColor" strokeWidth={1} />;
+  };
+
   return (
     <motion.div
       layout
@@ -61,7 +48,7 @@ export const Card: React.FC<CardProps> = ({
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       onClick={!disabled ? onClick : undefined}
       className={`
-        ${sizeClasses[size]} relative rounded-xl cursor-pointer select-none overflow-hidden
+        ${CARD_SIZE_CLASSES[size]} relative rounded-xl cursor-pointer select-none overflow-hidden
         transition-shadow duration-300
         ${isFaceDown ? 'card-face-down' : 'bg-gradient-to-br from-white to-gray-100'}
         ${selected ? 'ring-2 ring-cabo-accent card-glow' : ''}
@@ -81,16 +68,16 @@ export const Card: React.FC<CardProps> = ({
       ) : (
         // Face-up card
         <div className={`absolute inset-0 p-1.5 flex flex-col justify-between ${suit ? SUIT_COLORS[suit] : 'text-slate-200'}`}>
-          <div className="flex flex-col items-start leading-none">
+          <div className="flex flex-col items-start leading-none gap-0.5">
             <span className="font-bold font-display">{rank}</span>
-            {suit && <span className="text-[0.6em]">{SUIT_SYMBOLS[suit]}</span>}
+            {renderSuitIcon(suit, 12)}
           </div>
           <div className="flex items-center justify-center flex-1">
-            {suit && <span className="text-2xl">{SUIT_SYMBOLS[suit]}</span>}
+            {renderSuitIcon(suit, 28)}
           </div>
-          <div className="flex flex-col items-end leading-none rotate-180">
+          <div className="flex flex-col items-end leading-none gap-0.5 rotate-180">
             <span className="font-bold font-display">{rank}</span>
-            {suit && <span className="text-[0.6em]">{SUIT_SYMBOLS[suit]}</span>}
+            {renderSuitIcon(suit, 12)}
           </div>
         </div>
       )}
