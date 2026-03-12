@@ -18,15 +18,13 @@ export const LandingPage: React.FC = () => {
 
   const [joinCode, setJoinCode] = useState("");
   const [showRules, setShowRules] = useState(false);
-  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     initializeSocket();
   }, []);
 
   const handleCreateRoom = () => {
-    setPendingAction(() => createRoom);
-    setShowRules(true);
+    createRoom();
   };
 
   const handleJoinRoom = () => {
@@ -37,16 +35,7 @@ export const LandingPage: React.FC = () => {
 
   const handleSubmitJoin = () => {
     if (joinCode.trim()) {
-      setPendingAction(() => () => joinRoom(joinCode));
-      setShowRules(true);
-    }
-  };
-
-  const executePendingAction = () => {
-    setShowRules(false);
-    if (pendingAction) {
-      pendingAction();
-      setPendingAction(null);
+      joinRoom(joinCode);
     }
   };
 
@@ -73,9 +62,7 @@ export const LandingPage: React.FC = () => {
         onJoinRoom={handleJoinRoom}
       />
 
-      {showRules && (
-        <GameRulesCarousel onClose={executePendingAction} />
-      )}
+      {showRules && <GameRulesCarousel onClose={() => setShowRules(false)} />}
     </div>
   );
 };
