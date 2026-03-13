@@ -73,6 +73,62 @@ export class GameRoom {
     }
   }
 
+  /**
+   * Deliberately leave the game mid-play.
+   * Handles turn advancement and game abandonment when too few players remain.
+   */
+  leaveGame(playerId: string): { abandoned: boolean } {
+    const player = this.getPlayer(playerId);
+    if (!player) return { abandoned: false };
+
+    player.isConnected = false;
+
+    // Clean up any in-progress state for this player
+    this.drawnCard.delete(playerId);
+    this.drawnFromDiscard.delete(playerId);
+    this.pendingAction.delete(playerId);
+    this.lookAndSwapState.delete(playerId);
+    this.memorizeReady.delete(playerId);
+
+    // Check if enough players remain
+    if (this.activePlayers.length < CONFIG.MIN_PLAYERS) {
+      this.clearSnapTimer();
+      this.phase = "ABANDONED";
+      this.onStateUpdate?.();
+      return { abandoned: true };
+    }
+
+    // If it was this player's turn, advance
+    if (
+      this.currentPlayer?.id === playerId &&
+      (this.phase === "PLAYING" ||
+        this.phase === "CABO_CALLED" ||
+        this.phase === "ACTION_PENDING")
+    ) {
+      this.restorePhaseAfterAction();
+      this.advanceTurn();
+    }
+
+    // If in MEMORIZE phase, check if remaining players are all ready
+    if (this.phase === "MEMORIZE") {
+      if (this.memorizeReady.size >= this.activePlayers.length) {
+        this.phase = "PLAYING";
+        this.currentTurnIndex = 0;
+        for (const p of this.players) {
+          p.peekedIndices.clear();
+        }
+      }
+    }
+
+    // If the cabo caller left, end the round immediately
+    if (this.caboCallerId === playerId && this.phase === "CABO_CALLED") {
+      this.endRound();
+    }
+
+    this.onStateUpdate?.();
+    return { abandoned: false };
+  }
+
   getPlayer(id: string): Player | undefined {
     return this.players.find((p) => p.id === id);
   }
@@ -650,6 +706,7 @@ export class GameRoom {
         ? CONFIG.INITIAL_PEEK_COUNT - player.peekedIndices.size
         : 0,
       drawnFromDiscard: this.drawnFromDiscard.has(playerId),
+      isMemorizeReady: this.memorizeReady.has(playerId),
     };
   }
 }

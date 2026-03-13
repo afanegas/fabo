@@ -60,9 +60,12 @@ export const Card: React.FC<CardProps> = ({
     >
       {isFaceDown ? (
         // Face-down card back
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-3/5 h-3/5 rounded-lg border border-cabo-accent/20 flex items-center justify-center">
-            <span className="text-cabo-accent/40 font-display font-bold text-lg">C</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <div className="w-3/5 h-3/5 rounded-lg border border-cabo-accent/20 flex flex-col items-center justify-center gap-0.5">
+            <span className="text-cabo-accent/40 font-display font-bold text-lg leading-none">C</span>
+            {index !== undefined && (
+              <span className="text-cabo-accent/40 font-display text-[10px] leading-none">{index + 1}</span>
+            )}
           </div>
         </div>
       ) : (

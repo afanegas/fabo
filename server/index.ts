@@ -292,6 +292,58 @@ io.on("connection", (socket: Socket) => {
     broadcastState(room);
   });
 
+  // ─── Leave Game ───
+  socket.on(SocketEvents.LEAVE_GAME, (_: any, callback: any) => {
+    const { room, player } = getContext(socket);
+    if (!room || !player) return callback?.({ success: false });
+
+    const result = room.leaveGame(player.id);
+    socket.leave(room.code);
+    playerRooms.delete(socket.id);
+
+    io.to(room.code).emit(SocketEvents.PLAYER_LEFT, {
+      playerId: player.id,
+      playerName: player.name,
+    });
+
+    callback?.({ success: true });
+    broadcastState(room);
+
+    // Clean up empty rooms
+    if (room.activePlayers.length === 0) {
+      rooms.delete(room.code);
+    }
+  });
+
+  // ─── Reconnect Session ───
+  socket.on(
+    SocketEvents.RECONNECT,
+    (data: { roomCode: string; playerId: string }, callback: any) => {
+      const room = rooms.get(data.roomCode);
+      if (!room) {
+        return callback?.({ success: false, error: "Room not found" });
+      }
+
+      const player = room.getPlayer(data.playerId);
+      if (!player) {
+        return callback?.({ success: false, error: "Player not found" });
+      }
+
+      // Remove old mapping if exists
+      const oldSocketId = player.socketId;
+      playerRooms.delete(oldSocketId);
+
+      // Rebind the new socket to the player
+      player.socketId = socket.id;
+      player.isConnected = true;
+      playerRooms.set(socket.id, data.roomCode);
+      socket.join(data.roomCode);
+
+      callback?.({ success: true, playerId: player.id });
+      broadcastState(room);
+    },
+  );
+
   // ─── Disconnect ───
   socket.on("disconnect", () => {
     console.log(`Player disconnected: ${socket.id}`);

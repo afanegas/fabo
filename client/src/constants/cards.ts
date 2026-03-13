@@ -20,7 +20,7 @@ export const SUIT_COLORS: Record<Suit, string> = {
 };
 
 export const CARD_SIZE_CLASSES = {
-  sm: "w-14 h-20 text-xs",
-  md: "w-20 h-28 text-sm",
-  lg: "w-24 h-36 text-base",
+  sm: "w-10 h-14 md:w-14 md:h-20 text-[10px] md:text-xs",
+  md: "w-16 h-24 md:w-20 md:h-28 text-xs md:text-sm",
+  lg: "w-16 h-24 md:w-24 md:h-36 text-sm md:text-base",
 };

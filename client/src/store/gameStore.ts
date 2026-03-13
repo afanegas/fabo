@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { ClientGameState, Card, ActionType, GamePhase } from '@shared/types';
 import { CONFIG } from '@shared/rules';
 import { socketService, SocketEvents } from '../services/socket';
@@ -36,7 +37,7 @@ interface GameStore {
   drawFromDiscard: () => Promise<void>;
   keepDrawnCard: (swapIndices: number[]) => Promise<void>;
   discardDrawnCard: () => Promise<void>;
-  useAction: (data: { targetPlayerId?: string; myCardIndex?: number; targetCardIndex?: number }) => Promise<void>;
+  useAction: (data: { targetPlayerId?: string; myCardIndex?: number; targetCardIndex?: number }, keepActionOpen?: boolean) => Promise<void>;
   callCabo: () => Promise<void>;
   snap: (cardIndex: number) => Promise<void>;
   nextRound: () => Promise<void>;
@@ -44,12 +45,17 @@ interface GameStore {
   setActionMode: (mode: ActionType | null) => void;
   clearPeekedCard: () => void;
   skipAction: () => Promise<void>;
+  reconnectSession: () => Promise<void>;
+  clearSession: () => void;
+  leaveGame: () => Promise<void>;
   initializeSocket: () => void;
 }
 
 let errorTimeoutId: NodeJS.Timeout | null = null;
 
-export const useGameStore = create<GameStore>((set, get) => ({
+export const useGameStore = create<GameStore>()(
+  persist(
+    (set, get) => ({
   // Initial state
   playerId: null,
   playerName: '',
@@ -262,11 +268,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
-  useAction: async (data) => {
+  useAction: async (data, keepActionOpen = false) => {
     try {
       const res: any = await socketService.emit(SocketEvents.USE_ACTION, data);
       if (res.success) {
-        set({ actionMode: null, selectedCardIndex: null });
+        if (!keepActionOpen) {
+          set({ actionMode: null, selectedCardIndex: null });
+        } else {
+          set({ selectedCardIndex: null });
+        }
         if (res.peekedCard) {
           set({ peekedCard: res.peekedCard, showPeekedCard: true });
           setTimeout(() => set({ showPeekedCard: false, peekedCard: null }), CONFIG.PEEK_DURATION_MS);
@@ -316,6 +326,40 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setActionMode: (mode) => set({ actionMode: mode }),
   clearPeekedCard: () => set({ peekedCard: null, showPeekedCard: false }),
 
+  reconnectSession: async () => {
+    const { roomCode, playerId } = get();
+    if (!roomCode || !playerId) return;
+
+    try {
+      socketService.connect();
+      // Small delay to ensure socket is connected before emitting
+      await new Promise(resolve => setTimeout(resolve, 200));
+      const res: any = await socketService.emit(SocketEvents.RECONNECT, { roomCode, playerId });
+      if (res.success) {
+        set({ isConnected: true });
+      } else {
+        // Session expired, clear credentials
+        get().clearSession();
+      }
+    } catch (err) {
+      get().clearSession();
+    }
+  },
+
+  clearSession: () => {
+    set({ playerId: null, roomCode: null, playerName: '', gameState: null, isConnected: false, drawnCard: null, actionMode: null, selectedCardIndex: null, showScoreBoard: false });
+  },
+
+  leaveGame: async () => {
+    try {
+      await socketService.emit(SocketEvents.LEAVE_GAME);
+    } catch (err) {
+      // Ignore errors — we're leaving anyway
+    }
+    get().clearSession();
+    socketService.disconnect();
+  },
+
   skipAction: async () => {
     try {
       const res: any = await socketService.emit(SocketEvents.SKIP_ACTION);
@@ -328,4 +372,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
       get().setError('Failed to skip action');
     }
   },
-}));
+}),
+    {
+      name: 'cabo-session',
+      storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => ({
+        playerId: state.playerId,
+        playerName: state.playerName,
+        roomCode: state.roomCode,
+      }),
+    },
+  ),
+);

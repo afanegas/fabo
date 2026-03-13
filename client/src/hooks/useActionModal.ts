@@ -41,13 +41,13 @@ export const useActionModal = () => {
     } else if (actionMode === 'LOOK_AND_SWAP') {
       if (lookSwapPhase === 'look') {
         if (lookTarget === 'self' && selectedCardIndex !== null) {
-          useAction({ myCardIndex: selectedCardIndex }).then(() => {
+          useAction({ myCardIndex: selectedCardIndex }, true).then(() => {
             setLookSwapPhase('swap');
             setSelectedCardIndex(null);
             setLookTarget(null);
           });
         } else if (lookTarget === 'opponent' && targetPlayerId && targetCardIndex !== null) {
-          useAction({ targetPlayerId, targetCardIndex }).then(() => {
+          useAction({ targetPlayerId, targetCardIndex }, true).then(() => {
             setLookSwapPhase('swap');
             setTargetPlayerId(null);
             setTargetCardIndex(null);

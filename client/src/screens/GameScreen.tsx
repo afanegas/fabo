@@ -8,12 +8,14 @@ import { DrawAndDiscard } from '../components/DrawAndDiscard';
 import { ActionModal } from '../components/ActionModal';
 import { ScoreBoard } from '../components/ScoreBoard';
 import { PeekOverlay } from '../components/PeekOverlay';
+import { LogOut } from 'lucide-react';
 
 export const GameScreen: React.FC = () => {
   const {
     caboAlertActive,
     error,
     snapNotification,
+    leaveGame,
   } = useGameStore();
 
   const {
@@ -79,6 +81,13 @@ export const GameScreen: React.FC = () => {
           <span className="text-cabo-textDim text-xs font-display">
             {gameState.roomCode}
           </span>
+          <button
+            onClick={leaveGame}
+            className="flex items-center gap-1.5 text-cabo-textDim hover:text-cabo-red transition-colors text-xs font-display px-2 py-1 rounded border border-cabo-border/30 hover:border-cabo-red/50"
+            title="Return to Lobby"
+          >
+            <LogOut size={14} /> Leave
+          </button>
         </div>
       </div>
 
@@ -110,8 +119,8 @@ export const GameScreen: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Opponents */}
-      <div className="flex justify-center gap-3 px-4 py-3 flex-wrap">
+      {/* Opponents Desktop Layout */}
+      <div className="hidden md:flex justify-center gap-3 px-4 py-3 flex-wrap">
         {opponents.map(p => (
           <OpponentDisplay
             key={p.id}
@@ -119,6 +128,48 @@ export const GameScreen: React.FC = () => {
             onCardClick={(idx) => handleOpponentCardClick(p.id, idx)}
           />
         ))}
+      </div>
+
+      {/* Opponents Mobile Layout */}
+      <div className="md:hidden flex flex-col w-full px-2 py-2 gap-2">
+        {opponents.length > 0 && (
+          <div className="flex justify-center w-full">
+            <OpponentDisplay
+              key={opponents[0].id}
+              player={opponents[0]}
+              onCardClick={(idx) => handleOpponentCardClick(opponents[0].id, idx)}
+            />
+          </div>
+        )}
+        {(opponents.length > 1 || opponents.length > 2) && (
+          <div className="flex justify-between w-full px-2">
+            {opponents.length > 1 && (
+              <OpponentDisplay
+                key={opponents[1].id}
+                player={opponents[1]}
+                onCardClick={(idx) => handleOpponentCardClick(opponents[1].id, idx)}
+              />
+            )}
+            {opponents.length > 2 && (
+              <OpponentDisplay
+                key={opponents[2].id}
+                player={opponents[2]}
+                onCardClick={(idx) => handleOpponentCardClick(opponents[2].id, idx)}
+              />
+            )}
+          </div>
+        )}
+        {opponents.length > 3 && (
+          <div className="flex justify-center flex-wrap gap-2 w-full mt-2">
+            {opponents.slice(3).map(p => (
+              <OpponentDisplay
+                key={p.id}
+                player={p}
+                onCardClick={(idx) => handleOpponentCardClick(p.id, idx)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Center: Draw & Discard piles */}
@@ -153,6 +204,16 @@ export const GameScreen: React.FC = () => {
             {gameState.players.find(p => p.id === gameState.currentTurnPlayerId)?.name}'s turn
           </p>
         )}
+        {isMemorize && gameState.isMemorizeReady && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            className="text-cabo-accent font-display text-xs"
+          >
+            Waiting for other players...
+          </motion.p>
+        )}
       </div>
 
       {/* Player's hand */}
@@ -171,7 +232,7 @@ export const GameScreen: React.FC = () => {
                   🔔 Call CABO
                 </motion.button>
               )}
-              {isMemorize && (
+              {isMemorize && !gameState.isMemorizeReady && (
                 <motion.button
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -202,7 +263,7 @@ export const GameScreen: React.FC = () => {
             </motion.button>
           )}
 
-          {isMemorize && (
+          {isMemorize && !gameState.isMemorizeReady && (
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -221,6 +282,40 @@ export const GameScreen: React.FC = () => {
       {actionMode && <ActionModal />}
       <ScoreBoard />
       <PeekOverlay />
+
+      {/* Abandoned game overlay */}
+      <AnimatePresence>
+        {gameState.phase === 'ABANDONED' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.85)' }}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-cabo-dark border border-cabo-border/40 rounded-2xl p-8 max-w-sm mx-4 text-center shadow-2xl"
+            >
+              <div className="text-4xl mb-4">👋</div>
+              <h2 className="text-xl font-display font-bold text-cabo-text mb-2">
+                Game Ended
+              </h2>
+              <p className="text-cabo-textDim text-sm mb-6">
+                A player has left the game. Not enough players to continue.
+                Start a new game from the lobby!
+              </p>
+              <button
+                onClick={leaveGame}
+                className="btn-primary text-sm w-full"
+              >
+                Return to Lobby
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

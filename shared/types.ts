@@ -22,7 +22,8 @@ export type GamePhase =
   | 'SNAP_WINDOW'
   | 'ACTION_PENDING'
   | 'ROUND_END'
-  | 'GAME_OVER';
+  | 'GAME_OVER'
+  | 'ABANDONED';
 
 // ─── Player ───
 export interface PlayerState {
@@ -60,6 +61,7 @@ export interface ClientGameState {
   lastDiscard: Card | null;
   roundResults: RoundResult | null;
   memorizeCardsLeft: number;
+  isMemorizeReady: boolean;
 }
 
 // ─── Round Results ───
@@ -96,6 +98,8 @@ export enum SocketEvents {
   CALL_CABO = 'call_cabo',
   SNAP = 'snap',
   NEXT_ROUND = 'next_round',
+  RECONNECT = 'reconnect_session',
+  LEAVE_GAME = 'leave_game',
 
   // Server → Client
   ROOM_CREATED = 'room_created',
