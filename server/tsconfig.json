@@ -14,10 +14,9 @@
     "declaration": true,
     "baseUrl": ".",
     "paths": {
-      "@shared/*": ["../shared/*"],
-      "@client/*": ["../client/src/*"]
+      "@shared/*": ["../shared/*"]
     }
   },
-  "include": ["./**/*.ts", "../shared/**/*.ts", "../client/src/constants/**/*.ts"],
+  "include": ["./**/*.ts", "../shared/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

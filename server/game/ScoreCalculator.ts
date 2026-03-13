@@ -5,9 +5,8 @@ import {
   RoundResult,
   ActionType,
 } from "../../shared/types";
-import { CARD_POINTS, CARD_ACTIONS } from "@client/constants/cards";
 import { Player } from "./Player";
-import { CONFIG, SPECIAL_WIN_CARDS } from "../../shared/rules";
+import { CONFIG, SPECIAL_WIN_CARDS, CARD_POINTS, CARD_ACTIONS } from "../../shared/rules";
 
 export function getCardValue(card: Card): number {
   return CARD_POINTS[card.rank];
