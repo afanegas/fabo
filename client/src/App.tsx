@@ -3,7 +3,7 @@ import { useGameStore } from "./store/gameStore";
 import { LandingPage } from "./screens/LandingPage";
 import { LobbyScreen } from "./screens/LobbyScreen";
 import { GameScreen } from "./screens/GameScreen";
-import { Analytics } from "@vercel/analytics/next";
+import { Analytics } from "@vercel/analytics/react";
 
 const App: React.FC = () => {
   const { gameState, roomCode } = useGameStore();

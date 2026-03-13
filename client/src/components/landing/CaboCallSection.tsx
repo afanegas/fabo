@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
+import { CONFIG } from '@shared/types';
 
 export const CaboCallSection: React.FC = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -117,7 +118,7 @@ export const CaboCallSection: React.FC = () => {
             </div>
             <p className="text-cabo-textDim text-sm leading-relaxed">
               If you don't have the lowest score when you call CABO, you receive an extra{' '}
-              <strong className="text-cabo-red">5-point penalty</strong> on top of your hand value.
+              <strong className="text-cabo-red">{CONFIG.CABO_PENALTY}-point penalty</strong> on top of your hand value.
             </p>
           </motion.div>
 
@@ -133,21 +134,21 @@ export const CaboCallSection: React.FC = () => {
               <h3 className="font-display font-bold text-cabo-accent text-sm">Legendary Instant Win</h3>
             </div>
             <p className="text-cabo-textDim text-sm leading-relaxed">
-              Hold exactly two <strong className="text-cabo-accent">12s</strong> and two{' '}
-              <strong className="text-cabo-accent">13s</strong> to instantly win and slam every opponent with{' '}
-              <strong className="text-cabo-accent">50 negative points</strong>.
+              Hold exactly two <strong className="text-cabo-accent">Qs</strong> and two{' '}
+              <strong className="text-cabo-accent">Ks</strong> to instantly win and slam every opponent with{' '}
+              <strong className="text-cabo-accent">{CONFIG.SPECIAL_WIN_PENALTY} penalty points</strong>.
             </p>
           </motion.div>
         </div>
 
-        {/* 12-12-13-13 display */}
+        {/* Q-Q-K-K display */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ delay: 1, duration: 0.6 }}
           className="flex justify-center gap-2"
         >
-          {['12', '12', '13', '13'].map((val, i) => (
+          {['Q', 'Q', 'K', 'K'].map((val, i) => (
             <motion.div
               key={i}
               animate={isInView ? {

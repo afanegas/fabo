@@ -1,6 +1,15 @@
 import React from "react";
 import { Card } from "../components/Card";
 import { motion } from "framer-motion";
+import { CARD_ACTIONS } from "./cards";
+import { CONFIG } from "@shared/rules";
+
+const getCardsForAction = (action: string) => {
+  return Object.entries(CARD_ACTIONS)
+    .filter(([_, act]) => act === action)
+    .map(([rank]) => rank)
+    .join(' & ');
+};
 
 const SlideVisual = ({ children }: { children: React.ReactNode }) => (
   <div className="flex items-center justify-center gap-4 py-4 my-2 h-32">
@@ -16,7 +25,7 @@ export const GAME_RULES_SLIDES = [
       "The goal of CABO is to have the lowest sum of cards in front of you. When you think you have the lowest score, call 'CABO'!",
     visual: (
       <SlideVisual>
-        <Card size="sm" card={{ rank: 1, suit: "spades" } as any} disabled />
+        <Card size="sm" card={{ rank: 'A', suit: "spades" } as any} disabled />
         <span className="text-2xl font-bold font-display text-cabo-textDim">
           +
         </span>
@@ -103,10 +112,48 @@ export const GAME_RULES_SLIDES = [
     ),
   },
   {
+    title: "Risk vs Reward",
+    icon: "🎲",
+    content:
+      "You can swap multiple cards of the SAME VALUE with one drawn card. But be careful! If the cards don't match, you lose your turn, keep the drawn card in the discard pile, and take your cards back.",
+    visual: (
+      <SlideVisual>
+        <div className="relative w-32 h-24">
+          <div className="absolute top-0 left-0 transform -rotate-6">
+            <Card size="sm" card={{ rank: 8, suit: "spades" } as any} disabled />
+          </div>
+          <div className="absolute top-2 left-6 transform rotate-6">
+            <Card size="sm" card={{ rank: 8, suit: "hearts" } as any} disabled />
+          </div>
+        </div>
+        <span className="text-2xl text-cabo-textDim mx-2">↔️</span>
+        <Card size="sm" card={{ rank: 2, suit: "clubs" } as any} disabled />
+      </SlideVisual>
+    ),
+  },
+  {
+    title: "Snapping",
+    icon: "⚡",
+    content:
+      "SNAP an EXACT MATCH from your hand to the top discard card at any time—even out of turn! ⚠️ Penalty: Snapping a wrong card adds 1 penalty card to your grid.",
+    visual: (
+      <SlideVisual>
+        <Card size="sm" card={{ rank: 10, suit: "hearts" } as any} disabled />
+        <motion.div
+          initial={{ x: 50, y: -20, rotate: 15 }}
+          animate={{ x: 0, y: 0, rotate: 0 }}
+          transition={{ repeat: Infinity, duration: 2 }}
+        >
+          <Card size="sm" card={{ rank: 10, suit: "spades" } as any} glowing disabled />
+        </motion.div>
+      </SlideVisual>
+    ),
+  },
+  {
     title: "Power Cards",
     icon: "⚡",
     content:
-      "7 & 8: PEEK at your own card.\n9 & 10: SPY on an opponent's card.\n11 & 12: SWAP a card with an opponent.\nJust remember, action cards only work when drawn from the deck and discarded immediately!",
+      `${getCardsForAction('PEEK')}: PEEK at your own card.\n${getCardsForAction('SPY')}: SPY on an opponent's card.\n${getCardsForAction('SWAP')} & Q: SWAP a card with an opponent. Use Q to LOOK at it first!\nJust remember, action cards only work when drawn from the deck and discarded immediately!`,
     visual: (
       <SlideVisual>
         <div className="flex flex-col items-center group">
@@ -122,7 +169,7 @@ export const GAME_RULES_SLIDES = [
           </span>
         </div>
         <div className="flex flex-col items-center group">
-          <Card size="sm" card={{ rank: 11, suit: "hearts" } as any} glowing disabled />
+          <Card size="sm" card={{ rank: 'J', suit: "hearts" } as any} glowing disabled />
           <span className="mt-2 text-xs font-bold text-cabo-accent font-display">
             SWAP
           </span>
@@ -151,6 +198,33 @@ export const GAME_RULES_SLIDES = [
         >
           🔔 Call CABO
         </motion.button>
+      </SlideVisual>
+    ),
+  },
+  {
+    title: "Kamikaze (Special Win)",
+    icon: "👑",
+    content:
+      `If you end the round with exactly two Qs and two Ks, you instantly win the round! You get 0 points, and every other player is slammed with ${CONFIG.SPECIAL_WIN_PENALTY} penalty points.`,
+    visual: (
+      <SlideVisual>
+        <Card size="sm" card={{ rank: 'Q', suit: "hearts" } as any} disabled glowing />
+        <Card size="sm" card={{ rank: 'Q', suit: "spades" } as any} disabled glowing />
+        <Card size="sm" card={{ rank: 'K', suit: "clubs" } as any} disabled glowing />
+        <Card size="sm" card={{ rank: 'K', suit: "diamonds" } as any} disabled glowing />
+      </SlideVisual>
+    ),
+  },
+  {
+    title: "Game Over",
+    icon: "🏁",
+    content:
+      `The game ends when a player reaches or exceeds ${CONFIG.GAME_END_SCORE} points. The player with the lowest score at that point is crowned the ultimate CABO champion!`,
+    visual: (
+      <SlideVisual>
+        <span className="text-4xl text-cabo-accent font-display font-bold">
+          {CONFIG.GAME_END_SCORE} PTS
+        </span>
       </SlideVisual>
     ),
   },

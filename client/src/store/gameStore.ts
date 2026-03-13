@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ClientGameState, Card, ActionType, GamePhase } from '@shared/types';
+import { CONFIG } from '@shared/rules';
 import { socketService, SocketEvents } from '../services/socket';
 
 interface GameStore {
@@ -117,14 +118,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       if (state.caboCallerId && state.caboCallerId !== myId) {
         if (!prev?.caboCallerId) {
           set({ caboAlertActive: true });
-          setTimeout(() => set({ caboAlertActive: false }), 5000);
+          setTimeout(() => set({ caboAlertActive: false }), CONFIG.CABO_ALERT_DURATION_MS);
         }
       }
     });
 
     socketService.on(SocketEvents.CABO_ANNOUNCED, (data: { callerName: string }) => {
       set({ caboAlertActive: true });
-      setTimeout(() => set({ caboAlertActive: false }), 5000);
+      setTimeout(() => set({ caboAlertActive: false }), CONFIG.CABO_ALERT_DURATION_MS);
     });
 
     socketService.on(SocketEvents.SNAP_RESULT, (data: { playerName: string; card: Card }) => {
@@ -192,7 +193,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const res: any = await socketService.emit(SocketEvents.PEEK_INITIAL, { cardIndex: index });
       if (res.success && res.card) {
         set({ peekedCard: res.card, showPeekedCard: true });
-        setTimeout(() => set({ showPeekedCard: false, peekedCard: null }), 2500);
+        setTimeout(() => set({ showPeekedCard: false, peekedCard: null }), CONFIG.PEEK_DURATION_MS);
       }
     } catch (err) {
       get().setError('Failed to peek');
@@ -268,7 +269,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         set({ actionMode: null, selectedCardIndex: null });
         if (res.peekedCard) {
           set({ peekedCard: res.peekedCard, showPeekedCard: true });
-          setTimeout(() => set({ showPeekedCard: false, peekedCard: null }), 2500);
+          setTimeout(() => set({ showPeekedCard: false, peekedCard: null }), CONFIG.PEEK_DURATION_MS);
         }
       } else {
         get().setError('Action failed');
@@ -291,7 +292,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     try {
       const res: any = await socketService.emit(SocketEvents.SNAP, { cardIndex });
       if (!res.success) {
-        get().setError('Card doesn\'t match!');
+        if (res.penaltyApplied) {
+          get().setError('Wrong snap! Penalty card added to your grid.');
+        } else {
+          get().setError("Card doesn't match!");
+        }
       }
     } catch (err) {
       get().setError('Failed');

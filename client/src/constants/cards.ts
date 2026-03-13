@@ -1,6 +1,9 @@
-import { Heart, Diamond, Club, Spade } from 'lucide-react';
-import React from 'react';
-import { Suit } from '@shared/types';
+import { Heart, Diamond, Club, Spade } from "lucide-react";
+import React from "react";
+import { Suit } from "@shared/types";
+import { CARD_POINTS, CARD_ACTIONS } from "@shared/rules";
+
+export { CARD_POINTS, CARD_ACTIONS };
 
 export const SUIT_ICONS: Record<Suit, React.ElementType> = {
   hearts: Heart,
@@ -10,14 +13,14 @@ export const SUIT_ICONS: Record<Suit, React.ElementType> = {
 };
 
 export const SUIT_COLORS: Record<Suit, string> = {
-  hearts: 'text-red-500',
-  diamonds: 'text-red-500',
-  clubs: 'text-gray-800',
-  spades: 'text-gray-800',
+  hearts: "text-red-500",
+  diamonds: "text-red-500",
+  clubs: "text-gray-800",
+  spades: "text-gray-800",
 };
 
 export const CARD_SIZE_CLASSES = {
-  sm: 'w-14 h-20 text-xs',
-  md: 'w-20 h-28 text-sm',
-  lg: 'w-24 h-36 text-base',
+  sm: "w-14 h-20 text-xs",
+  md: "w-20 h-28 text-sm",
+  lg: "w-24 h-36 text-base",
 };

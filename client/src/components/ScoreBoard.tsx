@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useScoreBoard } from '../hooks/useScoreBoard';
 import { SUIT_ICONS } from '../constants/cards';
+import { CONFIG } from '@shared/rules';
 
 export const ScoreBoard: React.FC = () => {
   const {
@@ -92,7 +93,7 @@ export const ScoreBoard: React.FC = () => {
 
                     <div className="flex gap-2 mt-1 text-[10px] text-cabo-textDim">
                       <span>Hand: {result.handTotal}</span>
-                      {result.caboPenalty && <span className="text-cabo-red">+10 Cabo penalty</span>}
+                      {result.caboPenalty && <span className="text-cabo-red">+{CONFIG.CABO_PENALTY} Cabo penalty</span>}
                       {result.specialWin && <span className="text-cabo-accent">✨ Special Win!</span>}
                     </div>
                   </motion.div>
