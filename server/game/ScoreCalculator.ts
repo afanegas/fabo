@@ -1,22 +1,20 @@
-import { Card, Rank, PlayerRoundResult, RoundResult, ActionType } from '../../shared/types';
-import { Player } from './Player';
-import { CONFIG } from '../../shared/types';
+import {
+  Card,
+  Rank,
+  PlayerRoundResult,
+  RoundResult,
+  ActionType,
+} from "../../shared/types";
+import { CARD_POINTS, CARD_ACTIONS } from "@client/constants/cards";
+import { Player } from "./Player";
+import { CONFIG, SPECIAL_WIN_CARDS } from "../../shared/rules";
 
 export function getCardValue(card: Card): number {
-  if (card.rank === 'K') return 0;
-  const valueMap: Record<Rank, number> = {
-    'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6,
-    '7': 7, '8': 8, '9': 9, '10': 10, 'J': 10, 'Q': 10, 'K': 0
-  };
-  return valueMap[card.rank];
+  return CARD_POINTS[card.rank];
 }
 
 export function getActionType(rank: Rank): ActionType | null {
-  if (rank === '7' || rank === '8') return 'PEEK';
-  if (rank === '9' || rank === '10') return 'SPY';
-  if (rank === 'J') return 'SWAP';
-  if (rank === 'Q') return 'LOOK_AND_SWAP';
-  return null;
+  return CARD_ACTIONS[rank];
 }
 
 function getHandTotal(cards: Card[]): number {
@@ -24,14 +22,17 @@ function getHandTotal(cards: Card[]): number {
 }
 
 function hasSpecialWin(cards: Card[]): boolean {
-  if (cards.length !== 4) return false;
-  const queens = cards.filter(c => c.rank === 'Q').length;
-  const kings = cards.filter(c => c.rank === 'K').length;
-  return queens === 2 && kings === 2;
+  if (cards.length !== CONFIG.CARDS_PER_PLAYER) return false;
+  const queens = cards.filter((c) => c.rank === "Q").length;
+  const kings = cards.filter((c) => c.rank === "K").length;
+  return queens === SPECIAL_WIN_CARDS.Q && kings === SPECIAL_WIN_CARDS.K;
 }
 
-export function calculateRoundResults(players: Player[], caboCallerId: string | null): RoundResult {
-  const results: PlayerRoundResult[] = players.map(player => ({
+export function calculateRoundResults(
+  players: Player[],
+  caboCallerId: string | null,
+): RoundResult {
+  const results: PlayerRoundResult[] = players.map((player) => ({
     playerId: player.id,
     playerName: player.name,
     cards: [...player.cards],
@@ -42,7 +43,7 @@ export function calculateRoundResults(players: Player[], caboCallerId: string | 
   }));
 
   // Check for special win condition (2×Q + 2×K)
-  const specialWinner = results.find(r => hasSpecialWin(r.cards));
+  const specialWinner = results.find((r) => hasSpecialWin(r.cards));
   if (specialWinner) {
     specialWinner.specialWin = true;
     specialWinner.roundScore = 0;
@@ -60,19 +61,25 @@ export function calculateRoundResults(players: Player[], caboCallerId: string | 
 
   // Find winner: lowest total wins
   // Cabo caller must be STRICTLY lowest to win — ties = penalty
-  const tiedForLowest = sortedByTotal.filter(r => r.handTotal === lowestTotal);
+  const tiedForLowest = sortedByTotal.filter(
+    (r) => r.handTotal === lowestTotal,
+  );
   let winnerId: string;
 
   if (tiedForLowest.length === 1) {
     winnerId = tiedForLowest[0].playerId;
   } else {
     // Tie: cabo caller does NOT win ties — first non-caller with lowest wins
-    const nonCallerWinner = tiedForLowest.find(r => r.playerId !== caboCallerId);
-    winnerId = nonCallerWinner ? nonCallerWinner.playerId : tiedForLowest[0].playerId;
+    const nonCallerWinner = tiedForLowest.find(
+      (r) => r.playerId !== caboCallerId,
+    );
+    winnerId = nonCallerWinner
+      ? nonCallerWinner.playerId
+      : tiedForLowest[0].playerId;
   }
 
   // Check cabo penalty: caller must be strictly lowest, otherwise penalty
-  const caboCaller = results.find(r => r.playerId === caboCallerId);
+  const caboCaller = results.find((r) => r.playerId === caboCallerId);
   if (caboCaller && caboCaller.playerId !== winnerId) {
     caboCaller.caboPenalty = true;
   }

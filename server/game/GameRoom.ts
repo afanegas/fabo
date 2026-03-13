@@ -1,25 +1,41 @@
-import { Card, GamePhase, ClientGameState, PlayerCardInfo, PlayerState, RoundResult, ActionType, CONFIG } from '../../shared/types';
-import { Deck } from './Deck';
-import { Player } from './Player';
-import { calculateRoundResults, getActionType, getCardValue } from './ScoreCalculator';
+import {
+  Card,
+  GamePhase,
+  ClientGameState,
+  PlayerCardInfo,
+  PlayerState,
+  RoundResult,
+  ActionType,
+} from "../../shared/types";
+import { CONFIG } from "../../shared/rules";
+import { Deck } from "./Deck";
+import { Player } from "./Player";
+import {
+  calculateRoundResults,
+  getActionType,
+  getCardValue,
+} from "./ScoreCalculator";
 
 export class GameRoom {
   code: string;
   players: Player[] = [];
   deck: Deck = new Deck();
   discardPile: Card[] = [];
-  phase: GamePhase = 'WAITING';
+  phase: GamePhase = "WAITING";
   currentTurnIndex: number = 0;
   caboCallerId: string | null = null;
   finalTurnsRemaining: number = 0;
   roundNumber: number = 0;
   scores: Record<string, number[]> = {};
   totalScores: Record<string, number> = {};
-  hostId: string = '';
+  hostId: string = "";
   drawnCard: Map<string, Card> = new Map(); // playerId -> drawn card
   drawnFromDiscard: Set<string> = new Set(); // playerIds who drew from discard
   pendingAction: Map<string, ActionType> = new Map();
-  lookAndSwapState: Map<string, { peekedCard: Card; peekedPlayerId: string; peekedCardIndex: number }> = new Map();
+  lookAndSwapState: Map<
+    string,
+    { peekedCard: Card; peekedPlayerId: string; peekedCardIndex: number }
+  > = new Map();
   snapWindowActive: boolean = false;
   snapTimer: ReturnType<typeof setTimeout> | null = null;
   turnActionTaken: boolean = false;
@@ -37,7 +53,7 @@ export class GameRoom {
 
   addPlayer(id: string, name: string, socketId: string): Player | null {
     if (this.players.length >= CONFIG.MAX_PLAYERS) return null;
-    if (this.phase !== 'WAITING') return null;
+    if (this.phase !== "WAITING") return null;
 
     const player = new Player(id, name, socketId);
     this.players.push(player);
@@ -51,14 +67,14 @@ export class GameRoom {
   }
 
   removePlayer(id: string): void {
-    const player = this.players.find(p => p.id === id);
+    const player = this.players.find((p) => p.id === id);
     if (player) {
       player.isConnected = false;
     }
   }
 
   getPlayer(id: string): Player | undefined {
-    return this.players.find(p => p.id === id);
+    return this.players.find((p) => p.id === id);
   }
 
   get currentPlayer(): Player {
@@ -66,14 +82,14 @@ export class GameRoom {
   }
 
   get activePlayers(): Player[] {
-    return this.players.filter(p => p.isConnected);
+    return this.players.filter((p) => p.isConnected);
   }
 
   // ─── Game Flow ───
 
   startGame(): boolean {
     if (this.players.length < CONFIG.MIN_PLAYERS) return false;
-    if (this.phase !== 'WAITING') return false;
+    if (this.phase !== "WAITING") return false;
 
     this.roundNumber = 1;
     this.startRound();
@@ -111,11 +127,11 @@ export class GameRoom {
     const topCard = this.deck.draw();
     if (topCard) this.discardPile.push(topCard);
 
-    this.phase = 'MEMORIZE';
+    this.phase = "MEMORIZE";
   }
 
   peekInitialCard(playerId: string, cardIndex: number): Card | null {
-    if (this.phase !== 'MEMORIZE') return null;
+    if (this.phase !== "MEMORIZE") return null;
     const player = this.getPlayer(playerId);
     if (!player) return null;
 
@@ -128,13 +144,15 @@ export class GameRoom {
   }
 
   doneMemorazing(playerId: string): void {
-    if (this.phase !== 'MEMORIZE') return;
+    if (this.phase !== "MEMORIZE") return;
     this.memorizeReady.add(playerId);
-    console.log(`Player ${playerId} ready. ${this.memorizeReady.size}/${this.activePlayers.length} ready`);
+    console.log(
+      `Player ${playerId} ready. ${this.memorizeReady.size}/${this.activePlayers.length} ready`,
+    );
     if (this.memorizeReady.size >= this.activePlayers.length) {
-      this.phase = 'PLAYING';
+      this.phase = "PLAYING";
       this.currentTurnIndex = 0;
-      console.log('All players ready, phase -> PLAYING');
+      console.log("All players ready, phase -> PLAYING");
       // Clear peeked indices so they can't look again
       for (const player of this.players) {
         player.peekedIndices.clear();
@@ -171,15 +189,20 @@ export class GameRoom {
     return card;
   }
 
-  keepDrawnCard(playerId: string, swapIndices: number[]): { swapped: Card[], success: boolean, penalized: boolean } {
-    if (!this.isPlayerTurn(playerId)) return { swapped: [], success: false, penalized: false };
+  keepDrawnCard(
+    playerId: string,
+    swapIndices: number[],
+  ): { swapped: Card[]; success: boolean; penalized: boolean } {
+    if (!this.isPlayerTurn(playerId))
+      return { swapped: [], success: false, penalized: false };
     const drawn = this.drawnCard.get(playerId);
     if (!drawn) return { swapped: [], success: false, penalized: false };
     const player = this.getPlayer(playerId)!;
 
     // Validate indices
     for (const idx of swapIndices) {
-      if (idx < 0 || idx >= player.cardCount) return { swapped: [], success: false, penalized: false };
+      if (idx < 0 || idx >= player.cardCount)
+        return { swapped: [], success: false, penalized: false };
     }
 
     if (swapIndices.length === 1) {
@@ -194,9 +217,11 @@ export class GameRoom {
       return { swapped: [oldCard], success: true, penalized: false };
     } else {
       // Multi-card swap: all cards at indices must have the same value
-      const cardsAtIndices = swapIndices.map(i => player.cards[i]);
+      const cardsAtIndices = swapIndices.map((i) => player.cards[i]);
       const firstValue = getCardValue(cardsAtIndices[0]);
-      const allMatch = cardsAtIndices.every(c => getCardValue(c) === firstValue);
+      const allMatch = cardsAtIndices.every(
+        (c) => getCardValue(c) === firstValue,
+      );
 
       if (!allMatch) {
         // Penalty: cards go back, drawn card discarded, turn lost
@@ -224,13 +249,17 @@ export class GameRoom {
     }
   }
 
-  discardDrawnCard(playerId: string): { card: Card | null, actionType: ActionType | null } {
+  discardDrawnCard(playerId: string): {
+    card: Card | null;
+    actionType: ActionType | null;
+  } {
     if (!this.isPlayerTurn(playerId)) return { card: null, actionType: null };
     const drawn = this.drawnCard.get(playerId);
     if (!drawn) return { card: null, actionType: null };
 
     // Cannot discard a card drawn from the discard pile — must swap
-    if (this.drawnFromDiscard.has(playerId)) return { card: null, actionType: null };
+    if (this.drawnFromDiscard.has(playerId))
+      return { card: null, actionType: null };
 
     this.discardPile.push(drawn);
     this.drawnCard.delete(playerId);
@@ -240,7 +269,8 @@ export class GameRoom {
     const actionType = getActionType(drawn.rank);
     if (actionType) {
       this.pendingAction.set(playerId, actionType);
-      this.phase = this.phase === 'CABO_CALLED' ? 'CABO_CALLED' : 'ACTION_PENDING';
+      this.phase =
+        this.phase === "CABO_CALLED" ? "CABO_CALLED" : "ACTION_PENDING";
       return { card: drawn, actionType };
     }
 
@@ -249,7 +279,14 @@ export class GameRoom {
     return { card: drawn, actionType: null };
   }
 
-  useAction(playerId: string, data: { targetPlayerId?: string, myCardIndex?: number, targetCardIndex?: number }): {
+  useAction(
+    playerId: string,
+    data: {
+      targetPlayerId?: string;
+      myCardIndex?: number;
+      targetCardIndex?: number;
+    },
+  ): {
     success: boolean;
     peekedCard?: Card;
     actionType?: ActionType;
@@ -260,7 +297,7 @@ export class GameRoom {
     const player = this.getPlayer(playerId)!;
 
     switch (actionType) {
-      case 'PEEK': {
+      case "PEEK": {
         if (data.myCardIndex === undefined) return { success: false };
         const card = player.peekCard(data.myCardIndex);
         if (!card) return { success: false };
@@ -269,24 +306,38 @@ export class GameRoom {
         this.startSnapWindow();
         return { success: true, peekedCard: card, actionType };
       }
-      case 'SPY': {
-        if (!data.targetPlayerId || data.targetCardIndex === undefined) return { success: false };
+      case "SPY": {
+        if (!data.targetPlayerId || data.targetCardIndex === undefined)
+          return { success: false };
         const target = this.getPlayer(data.targetPlayerId);
         if (!target || target.id === playerId) return { success: false };
-        if (data.targetCardIndex < 0 || data.targetCardIndex >= target.cardCount) return { success: false };
+        if (
+          data.targetCardIndex < 0 ||
+          data.targetCardIndex >= target.cardCount
+        )
+          return { success: false };
         const card = target.cards[data.targetCardIndex];
         this.pendingAction.delete(playerId);
         this.restorePhaseAfterAction();
         this.startSnapWindow();
         return { success: true, peekedCard: card, actionType };
       }
-      case 'SWAP': {
-        if (!data.targetPlayerId || data.myCardIndex === undefined || data.targetCardIndex === undefined)
+      case "SWAP": {
+        if (
+          !data.targetPlayerId ||
+          data.myCardIndex === undefined ||
+          data.targetCardIndex === undefined
+        )
           return { success: false };
         const target = this.getPlayer(data.targetPlayerId);
         if (!target || target.id === playerId) return { success: false };
-        if (data.myCardIndex < 0 || data.myCardIndex >= player.cardCount) return { success: false };
-        if (data.targetCardIndex < 0 || data.targetCardIndex >= target.cardCount) return { success: false };
+        if (data.myCardIndex < 0 || data.myCardIndex >= player.cardCount)
+          return { success: false };
+        if (
+          data.targetCardIndex < 0 ||
+          data.targetCardIndex >= target.cardCount
+        )
+          return { success: false };
 
         const myCard = player.cards[data.myCardIndex];
         const theirCard = target.cards[data.targetCardIndex];
@@ -302,7 +353,7 @@ export class GameRoom {
         this.advanceTurn();
         return { success: true, actionType };
       }
-      case 'LOOK_AND_SWAP': {
+      case "LOOK_AND_SWAP": {
         const lookState = this.lookAndSwapState.get(playerId);
 
         if (!lookState) {
@@ -316,29 +367,53 @@ export class GameRoom {
               peekedPlayerId: playerId,
               peekedCardIndex: data.myCardIndex,
             });
-            return { success: true, peekedCard: card, actionType: 'LOOK_AND_SWAP' };
-          } else if (data.targetPlayerId && data.targetCardIndex !== undefined) {
+            return {
+              success: true,
+              peekedCard: card,
+              actionType: "LOOK_AND_SWAP",
+            };
+          } else if (
+            data.targetPlayerId &&
+            data.targetCardIndex !== undefined
+          ) {
             // Looking at opponent's card
             const target = this.getPlayer(data.targetPlayerId);
             if (!target || target.id === playerId) return { success: false };
-            if (data.targetCardIndex < 0 || data.targetCardIndex >= target.cardCount) return { success: false };
+            if (
+              data.targetCardIndex < 0 ||
+              data.targetCardIndex >= target.cardCount
+            )
+              return { success: false };
             const card = target.cards[data.targetCardIndex];
             this.lookAndSwapState.set(playerId, {
               peekedCard: card,
               peekedPlayerId: data.targetPlayerId,
               peekedCardIndex: data.targetCardIndex,
             });
-            return { success: true, peekedCard: card, actionType: 'LOOK_AND_SWAP' };
+            return {
+              success: true,
+              peekedCard: card,
+              actionType: "LOOK_AND_SWAP",
+            };
           }
           return { success: false };
         } else {
           // Phase 2: Swap the peeked card with another card, or skip
-          if (data.myCardIndex !== undefined && data.targetPlayerId && data.targetCardIndex !== undefined) {
+          if (
+            data.myCardIndex !== undefined &&
+            data.targetPlayerId &&
+            data.targetCardIndex !== undefined
+          ) {
             // Swap between my card and target's card
             const target = this.getPlayer(data.targetPlayerId);
             if (!target) return { success: false };
-            if (data.myCardIndex < 0 || data.myCardIndex >= player.cardCount) return { success: false };
-            if (data.targetCardIndex < 0 || data.targetCardIndex >= target.cardCount) return { success: false };
+            if (data.myCardIndex < 0 || data.myCardIndex >= player.cardCount)
+              return { success: false };
+            if (
+              data.targetCardIndex < 0 ||
+              data.targetCardIndex >= target.cardCount
+            )
+              return { success: false };
 
             const myCard = player.cards[data.myCardIndex];
             const theirCard = target.cards[data.targetCardIndex];
@@ -371,29 +446,37 @@ export class GameRoom {
 
   callCabo(playerId: string): boolean {
     if (!this.isPlayerTurn(playerId)) return false;
-    if (this.phase !== 'PLAYING') return false;
+    if (this.phase !== "PLAYING") return false;
     if (this.drawnCard.has(playerId)) return false; // Must call before drawing
     if (this.turnActionTaken) return false;
 
     const player = this.getPlayer(playerId)!;
     player.isCaboCaller = true;
     this.caboCallerId = playerId;
-    this.phase = 'CABO_CALLED';
+    this.phase = "CABO_CALLED";
     this.finalTurnsRemaining = this.activePlayers.length - 1;
     this.advanceTurn();
     return true;
   }
 
-  snap(playerId: string, cardIndex: number): { success: boolean, card?: Card } {
+  snap(playerId: string, cardIndex: number): { success: boolean; card?: Card; penaltyApplied?: boolean } {
     if (!this.snapWindowActive) return { success: false };
     if (!this.lastDiscard) return { success: false };
 
     const player = this.getPlayer(playerId);
     if (!player) return { success: false };
-    if (cardIndex < 0 || cardIndex >= player.cardCount) return { success: false };
+    if (cardIndex < 0 || cardIndex >= player.cardCount)
+      return { success: false };
 
     const card = player.cards[cardIndex];
-    if (getCardValue(card) !== getCardValue(this.lastDiscard)) return { success: false };
+    if (getCardValue(card) !== getCardValue(this.lastDiscard)) {
+      // Penalty for wrong snap: Draw 1 card and add to player grid
+      const penaltyCard = this.deck.draw();
+      if (penaltyCard) {
+        player.addCard(penaltyCard);
+      }
+      return { success: false, penaltyApplied: true, card: penaltyCard || undefined };
+    }
 
     // Valid snap! Remove card from player's hand and add to discard
     const removed = player.removeCard(cardIndex);
@@ -409,12 +492,17 @@ export class GameRoom {
   // ─── State Helpers ───
 
   private isPlayerTurn(playerId: string): boolean {
-    if (this.phase !== 'PLAYING' && this.phase !== 'CABO_CALLED' && this.phase !== 'ACTION_PENDING') return false;
+    if (
+      this.phase !== "PLAYING" &&
+      this.phase !== "CABO_CALLED" &&
+      this.phase !== "ACTION_PENDING"
+    )
+      return false;
     return this.currentPlayer.id === playerId;
   }
 
   private advanceTurn(): void {
-    if (this.phase === 'CABO_CALLED') {
+    if (this.phase === "CABO_CALLED") {
       this.finalTurnsRemaining--;
       if (this.finalTurnsRemaining <= 0) {
         this.endRound();
@@ -428,7 +516,8 @@ export class GameRoom {
       this.currentTurnIndex = (this.currentTurnIndex + 1) % this.players.length;
     } while (
       !this.currentPlayer.isConnected ||
-      (this.phase === 'CABO_CALLED' && this.currentPlayer.id === this.caboCallerId)
+      (this.phase === "CABO_CALLED" &&
+        this.currentPlayer.id === this.caboCallerId)
     );
 
     this.onStateUpdate?.();
@@ -462,9 +551,9 @@ export class GameRoom {
 
   private restorePhaseAfterAction(): void {
     if (this.caboCallerId) {
-      this.phase = 'CABO_CALLED';
+      this.phase = "CABO_CALLED";
     } else {
-      this.phase = 'PLAYING';
+      this.phase = "PLAYING";
     }
   }
 
@@ -480,7 +569,7 @@ export class GameRoom {
 
   private endRound(): void {
     this.clearSnapTimer();
-    this.phase = 'ROUND_END';
+    this.phase = "ROUND_END";
     this.roundResults = calculateRoundResults(this.players, this.caboCallerId);
 
     // Update scores
@@ -490,16 +579,18 @@ export class GameRoom {
     }
 
     // Check if game should end
-    const gameOver = Object.values(this.totalScores).some(score => score >= CONFIG.GAME_END_SCORE);
+    const gameOver = Object.values(this.totalScores).some(
+      (score) => score >= CONFIG.GAME_END_SCORE,
+    );
     if (gameOver) {
-      this.phase = 'GAME_OVER';
+      this.phase = "GAME_OVER";
     }
 
     this.onStateUpdate?.();
   }
 
   startNextRound(): void {
-    if (this.phase !== 'ROUND_END') return;
+    if (this.phase !== "ROUND_END") return;
     this.roundNumber++;
     this.startRound();
     this.onStateUpdate?.();
@@ -519,7 +610,7 @@ export class GameRoom {
         }))
       : [];
 
-    const players: PlayerState[] = this.players.map(p => ({
+    const players: PlayerState[] = this.players.map((p) => ({
       id: p.id,
       name: p.name,
       cardCount: p.cardCount,
@@ -535,7 +626,10 @@ export class GameRoom {
       currentTurnPlayerId: this.currentPlayer?.id || null,
       players,
       myCards,
-      discardTop: this.discardPile.length > 0 ? this.discardPile[this.discardPile.length - 1] : null,
+      discardTop:
+        this.discardPile.length > 0
+          ? this.discardPile[this.discardPile.length - 1]
+          : null,
       deckCount: this.deck.remaining,
       drawnCard,
       actionType: this.pendingAction.get(playerId) || null,
@@ -545,7 +639,10 @@ export class GameRoom {
       caboCallerId: this.caboCallerId,
       snapWindowActive: this.snapWindowActive,
       lastDiscard: this.lastDiscard,
-      roundResults: this.phase === 'ROUND_END' || this.phase === 'GAME_OVER' ? this.roundResults : null,
+      roundResults:
+        this.phase === "ROUND_END" || this.phase === "GAME_OVER"
+          ? this.roundResults
+          : null,
       memorizeCardsLeft: player
         ? CONFIG.INITIAL_PEEK_COUNT - player.peekedIndices.size
         : 0,
