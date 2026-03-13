@@ -10,6 +10,9 @@ export interface Card {
 
 export type ActionType = 'PEEK' | 'SPY' | 'SWAP' | 'LOOK_AND_SWAP';
 
+// ─── Shared Exports ───
+export * from './rules';
+
 // ─── Game Phases ───
 export type GamePhase =
   | 'WAITING'
@@ -117,16 +120,3 @@ export enum SocketEvents {
   ERROR = 'error',
 }
 
-// ─── Config ───
-export const CONFIG = {
-  MIN_PLAYERS: 2,
-  MAX_PLAYERS: 4,
-  CARDS_PER_PLAYER: 4,
-  INITIAL_PEEK_COUNT: 2,
-  SNAP_WINDOW_MS: 5000,
-  MEMORIZE_TIME_MS: 10000,
-  CABO_PENALTY: 10,
-  SPECIAL_WIN_PENALTY: 50,
-  GAME_END_SCORE: 100,
-  ROOM_CODE_LENGTH: 6,
-} as const;
