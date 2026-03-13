@@ -157,10 +157,38 @@ export const GameScreen: React.FC = () => {
 
       {/* Player's hand */}
       <div className="px-4 pb-4">
-        <PlayerHand />
+        <PlayerHand
+          centerSlot={
+            <>
+              {canCallCabo && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={callCabo}
+                  className="btn-danger text-xs md:hidden"
+                >
+                  🔔 Call CABO
+                </motion.button>
+              )}
+              {isMemorize && (
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  onClick={doneMemorizing}
+                  className="btn-primary text-xs md:hidden"
+                >
+                  {gameState.memorizeCardsLeft > 0
+                    ? `Skip & Ready`
+                    : 'Ready! ✓'}
+                </motion.button>
+              )}
+            </>
+          }
+        />
 
-        {/* Action buttons */}
-        <div className="flex justify-center gap-3 mt-3">
+        {/* Desktop action buttons (below cards) */}
+        <div className="hidden md:flex justify-center gap-3 mt-3">
           {canCallCabo && (
             <motion.button
               initial={{ opacity: 0, scale: 0.9 }}

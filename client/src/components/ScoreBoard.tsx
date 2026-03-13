@@ -77,8 +77,8 @@ export const ScoreBoard: React.FC = () => {
                         <span key={ci} className={`
                           flex items-center text-xs px-1.5 py-0.5 rounded
                           ${card.suit && ['hearts', 'diamonds'].includes(card.suit)
-                            ? 'bg-red-500/10 text-red-500'
-                            : 'bg-slate-500/10 text-slate-800'
+                            ? 'bg-red-500/10 text-red-400'
+                            : 'bg-slate-500/20 text-slate-300'
                           }
                         `}>
                           {card.rank}

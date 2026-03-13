@@ -299,8 +299,11 @@ export class GameRoom {
     switch (actionType) {
       case "PEEK": {
         if (data.myCardIndex === undefined) return { success: false };
-        const card = player.peekCard(data.myCardIndex);
-        if (!card) return { success: false };
+        if (data.myCardIndex < 0 || data.myCardIndex >= player.cardCount)
+          return { success: false };
+        // Read card directly without adding to peekedIndices
+        // so the card goes back to face-down after the peek overlay dismisses
+        const card = player.cards[data.myCardIndex];
         this.pendingAction.delete(playerId);
         this.restorePhaseAfterAction();
         this.startSnapWindow();
