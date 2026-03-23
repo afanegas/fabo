@@ -21,32 +21,52 @@ const App: React.FC = () => {
 
   if (isReconnecting) {
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        background: '#0a0a0f',
-        color: '#e0e0e0',
-        fontSize: '1.2rem',
-        fontFamily: 'Inter, sans-serif',
-      }}>
-        Reconnecting to game...
-      </div>
+      <>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          background: '#0a0a0f',
+          color: '#e0e0e0',
+          fontSize: '1.2rem',
+          fontFamily: 'Inter, sans-serif',
+        }}>
+          Reconnecting to game...
+        </div>
+        <Analytics />
+      </>
     );
   }
 
-  <Analytics />;
-
   // In active game (playing, memorize, etc.)
   const inGame = gameState && gameState.phase !== "WAITING";
-  if (inGame) return <GameScreen />;
+  if (inGame) {
+    return (
+      <>
+        <GameScreen />
+        <Analytics />
+      </>
+    );
+  }
 
   // In a room, waiting for players
-  if (roomCode && gameState?.phase === "WAITING") return <LobbyScreen />;
+  if (roomCode && gameState?.phase === "WAITING") {
+    return (
+      <>
+        <LobbyScreen />
+        <Analytics />
+      </>
+    );
+  }
 
   // Landing page
-  return <LandingPage />;
+  return (
+    <>
+      <LandingPage />
+      <Analytics />
+    </>
+  );
 };
 
 export default App;
