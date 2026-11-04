@@ -2,7 +2,8 @@
 
 A real-time multiplayer card game built with React and Socket.IO. Play the classic [Cabo card game](https://en.wikipedia.org/wiki/Cabo_(game)) online with friends.
 
-🎮 **Live at** [playcabo.vercel.app](https://playcabo.vercel.app)
+This is a fork of [dcs-soni/cabo](https://github.com/dcs-soni/cabo) with its own illustrated 0–13 deck,
+a championship mode and a Docker setup behind Traefik.
 
 ## How to Play
 
@@ -116,6 +117,18 @@ docker compose logs --tail 50 cabo
 ```
 
 For the local test setup, use the same commands with `-f docker-compose.dev.yml`.
+
+### Troubleshooting
+
+`EACCES: permission denied, open '/data/championship.json.tmp'` in the logs, with
+the container restarting over and over: the container runs as user 1000 and may not
+write to `./data`. This happens when the folder was created by Docker (as root)
+instead of with the `mkdir` step above. Fix it once:
+
+```bash
+sudo chown -R 1000:1000 data
+docker compose restart cabo
+```
 
 ### Backup
 
