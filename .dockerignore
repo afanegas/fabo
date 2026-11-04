@@ -1,0 +1,12 @@
+.git
+.gitignore
+.claude
+node_modules
+**/node_modules
+**/dist
+.env
+.env.*
+*.md
+render.yaml
+docker-compose.yml
+Dockerfile

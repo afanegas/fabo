@@ -2,6 +2,7 @@ import express from "express";
 import { createServer } from "http";
 import { Server, Socket } from "socket.io";
 import cors from "cors";
+import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { SocketEvents } from "../shared/types";
 import { GameRoom } from "./game/GameRoom";
@@ -388,6 +389,15 @@ function getContext(socket: Socket): {
 app.get("/health", (_: any, res: any) => res.json({ status: "ok" }));
 
 // ─── Start Server ───
+// Docker: the built client is served by this server (same origin, no CORS).
+const STATIC_DIR = process.env.STATIC_DIR;
+if (STATIC_DIR) {
+  app.use(express.static(STATIC_DIR));
+  app.get("*", (_: any, res: any) =>
+    res.sendFile(path.join(STATIC_DIR, "index.html")),
+  );
+}
+
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {
   console.log(`Cabo server running on port ${PORT}`);

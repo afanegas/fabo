@@ -1,7 +1,10 @@
 import { io, Socket } from 'socket.io-client';
 import { SocketEvents } from '@shared/types';
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+// Production build served by the game server itself (Docker): same origin.
+const SERVER_URL =
+  import.meta.env.VITE_SERVER_URL ||
+  (import.meta.env.PROD ? window.location.origin : 'http://localhost:3001');
 
 class SocketService {
   private socket: Socket | null = null;
