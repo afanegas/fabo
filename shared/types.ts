@@ -1,11 +1,9 @@
 // ─── Card Types ───
-export type Suit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
-export type Rank = 'A' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K';
+export type Rank = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12' | '13';
 
 export interface Card {
   id: string;
   rank: Rank;
-  suit: Suit;
 }
 
 export type ActionType = 'PEEK' | 'SPY' | 'SWAP' | 'LOOK_AND_SWAP';
@@ -37,13 +35,15 @@ export interface PlayerState {
 export interface PlayerCardInfo {
   id: string;
   rank: Rank | null;  // null = face-down (hidden)
-  suit: Suit | null;
   isRevealed: boolean;
 }
+
+export type GameMode = 'normal' | 'championship';
 
 // ─── Client Game State (what the server sends to each player) ───
 export interface ClientGameState {
   roomCode: string;
+  mode: GameMode;
   phase: GamePhase;
   currentTurnPlayerId: string | null;
   players: PlayerState[];
@@ -62,6 +62,46 @@ export interface ClientGameState {
   roundResults: RoundResult | null;
   memorizeCardsLeft: number;
   isMemorizeReady: boolean;
+  gameStats: Record<string, PlayerRoundStats>; // playerId -> totals of finished rounds
+}
+
+// ─── Play Style & Luck (counted per player and round) ───
+export interface PlayerRoundStats {
+  ownPeeks: number;        // 7/8 looking at own card
+  opponentPeeks: number;   // 9/10 looking at an opponent's card
+  opponentSwaps: number;   // 11/12 swapping with an opponent
+  discardDraws: number;    // took the top card of the discard pile
+  unicornsDealt: number;   // 0-cards (sleeping fox) in the starting hand
+  unicornsDrawn: number;   // 0-cards drawn from the deck
+  unicornsStolen: number;  // 0-cards taken from an opponent by swapping
+}
+
+export const PLAYER_ROUND_STATS_KEYS: (keyof PlayerRoundStats)[] = [
+  'ownPeeks',
+  'opponentPeeks',
+  'opponentSwaps',
+  'discardDraws',
+  'unicornsDealt',
+  'unicornsDrawn',
+  'unicornsStolen',
+];
+
+export function emptyPlayerRoundStats(): PlayerRoundStats {
+  return {
+    ownPeeks: 0,
+    opponentPeeks: 0,
+    opponentSwaps: 0,
+    discardDraws: 0,
+    unicornsDealt: 0,
+    unicornsDrawn: 0,
+    unicornsStolen: 0,
+  };
+}
+
+export function addPlayerRoundStats(a: PlayerRoundStats, b: PlayerRoundStats): PlayerRoundStats {
+  const sum = emptyPlayerRoundStats();
+  for (const key of PLAYER_ROUND_STATS_KEYS) sum[key] = (a[key] ?? 0) + (b[key] ?? 0);
+  return sum;
 }
 
 // ─── Round Results ───
@@ -73,6 +113,7 @@ export interface PlayerRoundResult {
   roundScore: number;
   caboPenalty: boolean;
   specialWin: boolean;
+  stats: PlayerRoundStats;
 }
 
 export interface RoundResult {
@@ -100,6 +141,7 @@ export enum SocketEvents {
   NEXT_ROUND = 'next_round',
   RECONNECT = 'reconnect_session',
   LEAVE_GAME = 'leave_game',
+  JOIN_CHAMPIONSHIP = 'join_championship',
 
   // Server → Client
   ROOM_CREATED = 'room_created',

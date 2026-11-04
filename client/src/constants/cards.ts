@@ -1,23 +1,22 @@
-import { Heart, Diamond, Club, Spade } from "lucide-react";
-import React from "react";
-import { Suit } from "@shared/types";
-import { CARD_POINTS, CARD_ACTIONS } from "@shared/rules";
+import { Rank } from "@shared/types";
+import { CARD_POINTS, CARD_ACTIONS, CARD_TITLES } from "@shared/rules";
+import cardBack from "../assets/cards/back.webp";
 
-export { CARD_POINTS, CARD_ACTIONS };
+export { CARD_POINTS, CARD_ACTIONS, CARD_TITLES };
 
-export const SUIT_ICONS: Record<Suit, React.ElementType> = {
-  hearts: Heart,
-  diamonds: Diamond,
-  clubs: Club,
-  spades: Spade,
-};
+const cardImageModules = import.meta.glob<string>("../assets/cards/*.webp", {
+  eager: true,
+  import: "default",
+});
 
-export const SUIT_COLORS: Record<Suit, string> = {
-  hearts: "text-red-500",
-  diamonds: "text-red-500",
-  clubs: "text-gray-800",
-  spades: "text-gray-800",
-};
+export const CARD_IMAGES = Object.fromEntries(
+  Object.entries(cardImageModules).map(([path, url]) => [
+    path.split("/").pop()!.replace(".webp", ""),
+    url,
+  ]),
+) as Record<Rank, string>;
+
+export const CARD_BACK_IMAGE = cardBack;
 
 export const CARD_SIZE_CLASSES = {
   sm: "w-10 h-14 md:w-14 md:h-20 text-[10px] md:text-xs",

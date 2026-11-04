@@ -1,7 +1,7 @@
 import { useGameStore } from '../store/gameStore';
 
 export const useScoreBoard = () => {
-  const { gameState, showScoreBoard, nextRound, playerId } = useGameStore();
+  const { gameState, showScoreBoard, nextRound, playerId, leaveGame } = useGameStore();
 
   const isGameOver = gameState?.phase === 'GAME_OVER';
 
@@ -20,5 +20,7 @@ export const useScoreBoard = () => {
     overallWinnerId,
     playerId,
     nextRound,
+    isChampionship: gameState?.mode === 'championship',
+    leaveGame,
   };
 };

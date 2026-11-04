@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Card as CardType, PlayerCardInfo, Rank, Suit } from '@shared/types';
-import { SUIT_ICONS, SUIT_COLORS, CARD_SIZE_CLASSES } from '../constants/cards';
+import { Card as CardType, PlayerCardInfo } from '@shared/types';
+import { CARD_SIZE_CLASSES } from '../constants/cards';
+import { CardFace } from './CardFace';
 
 interface CardProps {
   card?: CardType | PlayerCardInfo | null;
@@ -25,14 +26,7 @@ export const Card: React.FC<CardProps> = ({
   disabled = false,
 }) => {
   const isFaceDown = faceDown || !card || ('isRevealed' in card && !card.isRevealed) || !card.rank;
-  const rank = card && 'rank' in card ? card.rank : null;
-  const suit = card && 'suit' in card ? card.suit : null;
-
-  const renderSuitIcon = (suit: Suit | null, size: number) => {
-    if (!suit) return null;
-    const Icon = SUIT_ICONS[suit];
-    return <Icon size={size} fill="currentColor" strokeWidth={1} />;
-  };
+  const rank = card?.rank ?? null;
 
   return (
     <motion.div
@@ -50,39 +44,23 @@ export const Card: React.FC<CardProps> = ({
       className={`
         ${CARD_SIZE_CLASSES[size]} relative rounded-xl cursor-pointer select-none overflow-hidden
         transition-shadow duration-300
-        ${isFaceDown ? 'card-face-down' : 'bg-gradient-to-br from-white to-gray-100'}
+        ${isFaceDown ? 'card-face-down' : 'bg-cabo-surface'}
         ${selected ? 'ring-2 ring-cabo-accent card-glow' : ''}
         ${glowing ? 'card-glow' : ''}
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-        border ${isFaceDown ? 'border-cabo-border' : 'border-gray-300'}
+        border border-cabo-border
         shadow-lg
       `}
     >
       {isFaceDown ? (
-        // Face-down card back
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="w-3/5 h-3/5 rounded-lg border border-cabo-accent/20 flex flex-col items-center justify-center gap-0.5">
-            <span className="text-cabo-accent/40 font-display font-bold text-lg leading-none">C</span>
-            {index !== undefined && (
-              <span className="text-cabo-accent/40 font-display text-[10px] leading-none">{index + 1}</span>
-            )}
+        // Face-down card back, the position number sits in the medallion
+        index !== undefined && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="card-back-number">{index + 1}</span>
           </div>
-        </div>
+        )
       ) : (
-        // Face-up card
-        <div className={`absolute inset-0 p-1.5 flex flex-col justify-between ${suit ? SUIT_COLORS[suit] : 'text-slate-200'}`}>
-          <div className="flex flex-col items-start leading-none gap-0.5">
-            <span className="font-bold font-display">{rank}</span>
-            {renderSuitIcon(suit, 12)}
-          </div>
-          <div className="flex items-center justify-center flex-1">
-            {renderSuitIcon(suit, 28)}
-          </div>
-          <div className="flex flex-col items-end leading-none gap-0.5 rotate-180">
-            <span className="font-bold font-display">{rank}</span>
-            {renderSuitIcon(suit, 12)}
-          </div>
-        </div>
+        rank && <CardFace rank={rank} />
       )}
     </motion.div>
   );

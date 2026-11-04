@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useScoreBoard } from '../hooks/useScoreBoard';
-import { SUIT_ICONS } from '../constants/cards';
+import { CARD_IMAGES } from '../constants/cards';
 import { CONFIG } from '@shared/rules';
+import { PLAY_STAT_GROUPS } from '../constants/playStats';
 
 export const ScoreBoard: React.FC = () => {
   const {
@@ -13,6 +14,8 @@ export const ScoreBoard: React.FC = () => {
     overallWinnerId,
     playerId,
     nextRound,
+    isChampionship,
+    leaveGame,
   } = useScoreBoard();
 
   if (!showScoreBoard || !gameState?.roundResults) return null;
@@ -74,19 +77,9 @@ export const ScoreBoard: React.FC = () => {
                     {/* Card breakdown */}
                     <div className="flex gap-1 mt-2 flex-wrap">
                       {result.cards.map((card, ci) => (
-                        <span key={ci} className={`
-                          flex items-center text-xs px-1.5 py-0.5 rounded
-                          ${card.suit && ['hearts', 'diamonds'].includes(card.suit)
-                            ? 'bg-red-500/10 text-red-400'
-                            : 'bg-slate-500/20 text-slate-300'
-                          }
-                        `}>
+                        <span key={ci} className="flex items-center gap-1 text-xs pl-0.5 pr-1.5 py-0.5 rounded bg-slate-500/20 text-slate-300">
+                          <img src={CARD_IMAGES[card.rank]} alt="" className="w-3 h-[18px] rounded-sm object-cover" />
                           {card.rank}
-                          {card.suit && React.createElement(SUIT_ICONS[card.suit], {
-                            className: "inline-block w-3 h-3 ml-0.5",
-                            strokeWidth: 2.5,
-                            fill: "currentColor"
-                          })}
                         </span>
                       ))}
                     </div>
@@ -127,6 +120,43 @@ export const ScoreBoard: React.FC = () => {
             </div>
           </div>
 
+          {/* Play style & luck of the finished game */}
+          {isGameOver && (
+            <div className="border-t border-cabo-border pt-4">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-cabo-textDim font-display">
+                    <th className="text-left font-semibold pb-1">Game stats</th>
+                    {sortedTotals.map(([pid]) => (
+                      <th key={pid} className={`text-right font-semibold pb-1 ${pid === playerId ? 'text-cabo-accent' : ''}`}>
+                        {gameState.players.find(p => p.id === pid)?.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                {PLAY_STAT_GROUPS.map((group) => (
+                  <tbody key={group.title}>
+                    <tr>
+                      <td colSpan={sortedTotals.length + 1} className="pt-2 pb-0.5 text-[10px] uppercase tracking-wider text-cabo-textDim">
+                        {group.title}
+                      </td>
+                    </tr>
+                    {group.rows.map((row) => (
+                      <tr key={row.key} className="border-t border-cabo-border/40">
+                        <td className="py-1 text-cabo-textDim">{row.label}</td>
+                        {sortedTotals.map(([pid]) => (
+                          <td key={pid} className="py-1 text-right font-display font-semibold">
+                            {gameState.gameStats?.[pid]?.[row.key] ?? 0}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                ))}
+              </table>
+            </div>
+          )}
+
           {/* Action */}
           {!isGameOver && (
             <button onClick={nextRound} className="btn-primary w-full">
@@ -138,12 +168,18 @@ export const ScoreBoard: React.FC = () => {
               <p className="text-cabo-accent font-display font-bold text-lg mb-2">
                 {overallWinnerId === playerId ? '🎉 You Won!' : `${gameState.players.find(p => p.id === overallWinnerId)?.name} Wins!`}
               </p>
-              <button
-                onClick={() => window.location.reload()}
-                className="btn-primary"
-              >
-                Play Again
-              </button>
+              {isChampionship ? (
+                <button onClick={leaveGame} className="btn-primary">
+                  🏆 Back to Championship
+                </button>
+              ) : (
+                <button
+                  onClick={() => window.location.reload()}
+                  className="btn-primary"
+                >
+                  Play Again
+                </button>
+              )}
             </div>
           )}
         </motion.div>

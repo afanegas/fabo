@@ -10,7 +10,11 @@ services:
     container_name: cabo
     environment:
       - TZ=Europe/Berlin
-    # Der Spielstand liegt nur im Arbeitsspeicher – kein Volume nötig.
+    # Laufende Partien liegen nur im Arbeitsspeicher. ./data enthält die
+    # Championship-Statistik (championship.json + Sicherungen vor jedem Reset).
+    # Einmalig auf dem Server:  mkdir -p data && sudo chown 1000:1000 data
+    volumes:
+      - ./data:/data
     networks:
       - traefik_proxy
     restart: unless-stopped

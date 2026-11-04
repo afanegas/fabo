@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 
 import { TUTORIAL_CARDS, TUTORIAL_ACTIONS } from '../../constants/tutorial';
-import { SUIT_ICONS, SUIT_COLORS } from '../../constants/cards';
+import { Rank } from '@shared/types';
+import { CardFace } from '../CardFace';
 
 // ─── Hook: Section visibility ───
 const useSectionInView = (threshold = 0.3) => {
@@ -13,15 +14,12 @@ const useSectionInView = (threshold = 0.3) => {
 
 // ─── Interactive Card (flippable) ───
 const FlipCard: React.FC<{
-  value: string;
-  suit: string;
+  value: Rank;
   index: number;
   canPeek: boolean;
   onPeek: () => void;
   isPeeked: boolean;
-}> = ({ value, suit, index, canPeek, onPeek, isPeeked }) => {
-  const Icon = SUIT_ICONS[suit as keyof typeof SUIT_ICONS];
-
+}> = ({ value, index, canPeek, onPeek, isPeeked }) => {
   return (
     <motion.div
       className="flip-card-container cursor-pointer"
@@ -40,15 +38,9 @@ const FlipCard: React.FC<{
       >
         {/* Face down */}
         <div
-          className="flip-card-face absolute inset-0 rounded-xl border border-cabo-border shadow-xl flex items-center justify-center"
-          style={{
-            backfaceVisibility: 'hidden',
-            background: 'linear-gradient(145deg, #1a1a2e 0%, #242445 50%, #1a1a2e 100%)',
-          }}
+          className="flip-card-face card-face-down absolute inset-0 rounded-xl border border-cabo-border shadow-xl flex items-center justify-center"
+          style={{ backfaceVisibility: 'hidden' }}
         >
-          <div className="w-3/5 h-3/5 rounded-lg border border-cabo-accent/20 flex items-center justify-center">
-            <span className="text-cabo-accent/40 font-display font-bold text-2xl">C</span>
-          </div>
           {canPeek && (
             <motion.div
               className="absolute inset-0 rounded-xl"
@@ -60,25 +52,10 @@ const FlipCard: React.FC<{
 
         {/* Face up */}
         <div
-          className={`flip-card-face absolute inset-0 rounded-xl border shadow-xl p-2 flex flex-col justify-between ${SUIT_COLORS[suit as keyof typeof SUIT_COLORS] || 'text-gray-800'}`}
-          style={{
-            backfaceVisibility: 'hidden',
-            transform: 'rotateY(180deg)',
-            background: 'linear-gradient(to br, #ffffff, #f0f0f0)',
-            borderColor: suit === 'hearts' || suit === 'diamonds' ? 'rgba(239,68,68,0.3)' : 'rgba(156,163,175,0.3)',
-          }}
+          className="flip-card-face absolute inset-0 rounded-xl border border-cabo-border shadow-xl overflow-hidden text-lg"
+          style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
         >
-          <div className={`font-display font-bold text-lg flex flex-col items-start leading-none`}>
-            {value}
-            <Icon size={12} fill="currentColor" strokeWidth={1} />
-          </div>
-          <div className="flex items-center justify-center flex-1">
-            <Icon size={28} fill="currentColor" strokeWidth={1} />
-          </div>
-          <div className={`font-display font-bold text-lg flex flex-col items-end leading-none rotate-180`}>
-            {value}
-            <Icon size={12} fill="currentColor" strokeWidth={1} />
-          </div>
+          <CardFace rank={value} />
         </div>
       </motion.div>
     </motion.div>
@@ -147,7 +124,6 @@ const MemoryPhase: React.FC = () => {
           <FlipCard
             key={i}
             value={card.value}
-            suit={card.suit}
             index={i}
             canPeek={isInView && peekCount < 2 && !peekedCards.has(i)}
             onPeek={() => handlePeek(i)}

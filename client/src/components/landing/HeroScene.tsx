@@ -330,6 +330,7 @@ export const HeroScene: React.FC<{
   onSubmitJoin: () => void;
   error: string | null;
   onShowRules: () => void;
+  onOpenChampionship: () => void;
 }> = ({
   onCreateRoom,
   onJoinRoom,
@@ -340,6 +341,7 @@ export const HeroScene: React.FC<{
   onSubmitJoin,
   error,
   onShowRules,
+  onOpenChampionship,
 }) => {
   const [showJoinInput, setShowJoinInput] = useState(false);
   const [isHoveringCreate, setIsHoveringCreate] = useState(false);
@@ -347,7 +349,7 @@ export const HeroScene: React.FC<{
   return (
     <section
       id="hero"
-      className="relative w-full h-screen overflow-hidden bg-cabo-darker"
+      className="relative w-full min-h-screen overflow-hidden bg-cabo-darker"
     >
       {/* 3D Canvas */}
       <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cabo-surface via-cabo-dark to-cabo-darker">
@@ -400,8 +402,9 @@ export const HeroScene: React.FC<{
       </div>
 
       {/* HTML Overlay */}
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6">
-        <div className="text-center mb-0 pointer-events-none select-none z-20 absolute top-[10%] md:top-[8%] lg:top-[12%] px-4 w-full flex flex-col items-center">
+      {/* Title and controls stack in normal flow so they can never overlap */}
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-between gap-8 p-6 pointer-events-none">
+        <div className="text-center pointer-events-none select-none z-20 pt-[6vh] md:pt-[8vh] px-4 w-full flex flex-col items-center">
           <h1
             className="text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] font-display font-extrabold tracking-[0.2em] text-transparent bg-clip-text"
             style={{
@@ -420,11 +423,11 @@ export const HeroScene: React.FC<{
         </div>
 
         {/* Start Position Container for bottom elements */}
-        <div className="flex flex-col items-center justify-end w-full h-full pb-32 sm:pb-8 lg:pb-8 gap-4 md:gap-6 pointer-events-none z-30">
-          {/* How to play on mobile: sits ABOVE the input container */}
+        <div className="flex flex-col items-center w-full pb-8 gap-4 md:gap-5 pointer-events-none z-30">
+          {/* How to play: sits ABOVE the input container */}
           <button
             onClick={onShowRules}
-            className="pointer-events-auto flex items-center gap-2 px-6 py-2.5 mb-2 md:mt-24 md:-mb-1 rounded-full bg-cabo-accent/10 border border-cabo-accent/30 text-cabo-accent text-sm md:text-base font-display font-bold tracking-widest uppercase transition-all duration-300 hover:bg-cabo-accent/20 hover:border-cabo-accent/50 hover:shadow-[0_0_15px_rgba(212,175,55,0.3)] hover:-translate-y-0.5"
+            className="pointer-events-auto flex items-center gap-2 px-6 py-2.5 rounded-full bg-cabo-accent/10 border border-cabo-accent/30 text-cabo-accent text-sm md:text-base font-display font-bold tracking-widest uppercase transition-all duration-300 hover:bg-cabo-accent/20 hover:border-cabo-accent/50 hover:shadow-[0_0_15px_rgba(212,175,55,0.3)] hover:-translate-y-0.5"
           >
             <span>📖</span> How to Play
           </button>
@@ -514,6 +517,13 @@ export const HeroScene: React.FC<{
                 )}
               </AnimatePresence>
             </div>
+
+            <button
+              onClick={onOpenChampionship}
+              className="w-full py-3 px-6 rounded-2xl border border-cabo-accent/40 bg-cabo-accent/10 backdrop-blur-xl text-cabo-accent hover:bg-cabo-accent/20 hover:border-cabo-accent/70 active:scale-[0.98] font-display font-bold tracking-widest text-sm transition-all"
+            >
+              🏆 FANE-LEBO LIFE CHAMPIONSHIP
+            </button>
           </div>
         </div>
       </div>

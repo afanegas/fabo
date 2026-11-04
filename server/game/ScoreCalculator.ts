@@ -4,6 +4,7 @@ import {
   PlayerRoundResult,
   RoundResult,
   ActionType,
+  emptyPlayerRoundStats,
 } from "../../shared/types";
 import { Player } from "./Player";
 import { CONFIG, SPECIAL_WIN_CARDS, CARD_POINTS, CARD_ACTIONS } from "../../shared/rules";
@@ -22,9 +23,9 @@ function getHandTotal(cards: Card[]): number {
 
 function hasSpecialWin(cards: Card[]): boolean {
   if (cards.length !== CONFIG.CARDS_PER_PLAYER) return false;
-  const queens = cards.filter((c) => c.rank === "Q").length;
-  const kings = cards.filter((c) => c.rank === "K").length;
-  return queens === SPECIAL_WIN_CARDS.Q && kings === SPECIAL_WIN_CARDS.K;
+  return Object.entries(SPECIAL_WIN_CARDS).every(
+    ([rank, count]) => cards.filter((c) => c.rank === rank).length === count,
+  );
 }
 
 export function calculateRoundResults(
@@ -39,9 +40,10 @@ export function calculateRoundResults(
     roundScore: 0,
     caboPenalty: false,
     specialWin: false,
+    stats: emptyPlayerRoundStats(),
   }));
 
-  // Check for special win condition (2×Q + 2×K)
+  // Check for special win condition (2×12 + 2×13)
   const specialWinner = results.find((r) => hasSpecialWin(r.cards));
   if (specialWinner) {
     specialWinner.specialWin = true;

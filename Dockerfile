@@ -17,10 +17,12 @@ FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production \
     PORT=8080 \
-    STATIC_DIR=/app/client/dist
+    STATIC_DIR=/app/client/dist \
+    DATA_DIR=/data
 
 COPY server/package*.json server/
-RUN cd server && npm ci --omit=dev && npm cache clean --force
+RUN cd server && npm ci --omit=dev && npm cache clean --force \
+ && mkdir -p /data && chown node:node /data
 
 COPY --from=build /app/server/dist server/dist
 COPY --from=build /app/client/dist client/dist

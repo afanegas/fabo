@@ -33,17 +33,22 @@
   }
 
   .card-face-down {
-    background: linear-gradient(145deg, #1a1a2e 0%, #242445 50%, #1a1a2e 100%);
-    background-size: 200% 100%;
+    background: #2a1f4e url('./assets/cards/back.webp') center / cover no-repeat;
   }
 
-  .card-face-down::after {
-    content: '';
-    position: absolute;
-    inset: 6px;
-    border: 1px solid rgba(212, 175, 55, 0.15);
-    border-radius: 8px;
-    pointer-events: none;
+  /* Card value on top of the illustration, readable even on small cards */
+  .card-rank {
+    @apply absolute font-display font-bold leading-none text-white;
+    font-size: 1.35em;
+    text-shadow: 0 0 4px rgba(20, 12, 45, 0.9), 0 1px 2px rgba(20, 12, 45, 0.9);
+  }
+
+  /* Position number inside the empty medallion of the card back */
+  .card-back-number {
+    @apply font-display font-bold leading-none;
+    color: rgba(255, 240, 210, 0.9);
+    font-size: 1.2em;
+    text-shadow: 0 0 6px rgba(42, 31, 78, 0.9);
   }
 
   .card-glow {

@@ -6,8 +6,12 @@ import {
   PlayerState,
   RoundResult,
   ActionType,
+  GameMode,
+  PlayerRoundStats,
+  emptyPlayerRoundStats,
+  addPlayerRoundStats,
 } from "../../shared/types";
-import { CONFIG } from "../../shared/rules";
+import { CONFIG, BEST_RANK } from "../../shared/rules";
 import { Deck } from "./Deck";
 import { Player } from "./Player";
 import {
@@ -44,9 +48,15 @@ export class GameRoom {
   roundResults: RoundResult | null = null;
   onStateUpdate: (() => void) | null = null;
   onSnapWindowClose: (() => void) | null = null;
+  onRoundEnd: ((result: RoundResult, gameOver: boolean) => void) | null = null;
+  mode: GameMode;
+  startedAt: string | null = null;
+  roundStats: Map<string, PlayerRoundStats> = new Map(); // current round
+  gameStats: Record<string, PlayerRoundStats> = {}; // finished rounds
 
-  constructor(code: string) {
+  constructor(code: string, mode: GameMode = "normal") {
     this.code = code;
+    this.mode = mode;
   }
 
   // ─── Player Management ───
@@ -82,6 +92,19 @@ export class GameRoom {
     if (!player) return { abandoned: false };
 
     player.isConnected = false;
+
+    // Leaving a finished game must not turn it into an abandoned one for the others
+    if (this.phase === "GAME_OVER") return { abandoned: false };
+
+    // Leaving the waiting room frees the seat; the room stays open
+    if (this.phase === "WAITING") {
+      this.players = this.players.filter((p) => p.id !== playerId);
+      delete this.scores[playerId];
+      delete this.totalScores[playerId];
+      if (this.hostId === playerId) this.hostId = this.players[0]?.id ?? "";
+      this.onStateUpdate?.();
+      return { abandoned: false };
+    }
 
     // Clean up any in-progress state for this player
     this.drawnCard.delete(playerId);
@@ -148,6 +171,7 @@ export class GameRoom {
     if (this.phase !== "WAITING") return false;
 
     this.roundNumber = 1;
+    this.startedAt = new Date().toISOString();
     this.startRound();
     return true;
   }
@@ -177,6 +201,13 @@ export class GameRoom {
         const card = this.deck.draw();
         if (card) player.addCard(card);
       }
+    }
+
+    this.roundStats.clear();
+    for (const player of this.players) {
+      this.stat(player.id).unicornsDealt = player.cards.filter(
+        (c) => c.rank === BEST_RANK,
+      ).length;
     }
 
     // Flip top card to start discard pile
@@ -229,6 +260,7 @@ export class GameRoom {
     if (!card) return null;
 
     this.drawnCard.set(playerId, card);
+    if (card.rank === BEST_RANK) this.stat(playerId).unicornsDrawn++;
     return card;
   }
 
@@ -242,6 +274,7 @@ export class GameRoom {
     const card = this.discardPile.pop()!;
     this.drawnCard.set(playerId, card);
     this.drawnFromDiscard.add(playerId);
+    this.stat(playerId).discardDraws++;
     return card;
   }
 
@@ -360,6 +393,7 @@ export class GameRoom {
         // Read card directly without adding to peekedIndices
         // so the card goes back to face-down after the peek overlay dismisses
         const card = player.cards[data.myCardIndex];
+        this.stat(playerId).ownPeeks++;
         this.pendingAction.delete(playerId);
         this.restorePhaseAfterAction();
         this.startSnapWindow();
@@ -376,6 +410,7 @@ export class GameRoom {
         )
           return { success: false };
         const card = target.cards[data.targetCardIndex];
+        this.stat(playerId).opponentPeeks++;
         this.pendingAction.delete(playerId);
         this.restorePhaseAfterAction();
         this.startSnapWindow();
@@ -402,6 +437,7 @@ export class GameRoom {
         const theirCard = target.cards[data.targetCardIndex];
         player.cards[data.myCardIndex] = theirCard;
         target.cards[data.targetCardIndex] = myCard;
+        this.countOpponentSwap(playerId, theirCard);
 
         // Clear peeked status for swapped positions
         player.peekedIndices.delete(data.myCardIndex);
@@ -421,6 +457,7 @@ export class GameRoom {
             // Looking at own card
             const card = player.peekCard(data.myCardIndex);
             if (!card) return { success: false };
+            this.stat(playerId).ownPeeks++;
             this.lookAndSwapState.set(playerId, {
               peekedCard: card,
               peekedPlayerId: playerId,
@@ -444,6 +481,7 @@ export class GameRoom {
             )
               return { success: false };
             const card = target.cards[data.targetCardIndex];
+            this.stat(playerId).opponentPeeks++;
             this.lookAndSwapState.set(playerId, {
               peekedCard: card,
               peekedPlayerId: data.targetPlayerId,
@@ -478,6 +516,7 @@ export class GameRoom {
             const theirCard = target.cards[data.targetCardIndex];
             player.cards[data.myCardIndex] = theirCard;
             target.cards[data.targetCardIndex] = myCard;
+            if (target.id !== playerId) this.countOpponentSwap(playerId, theirCard);
 
             player.peekedIndices.delete(data.myCardIndex);
             target.peekedIndices.delete(data.targetCardIndex);
@@ -513,7 +552,9 @@ export class GameRoom {
     player.isCaboCaller = true;
     this.caboCallerId = playerId;
     this.phase = "CABO_CALLED";
-    this.finalTurnsRemaining = this.activePlayers.length - 1;
+    // advanceTurn() below already counts down once for the caller's own turn,
+    // so every other player still gets exactly one final turn
+    this.finalTurnsRemaining = this.activePlayers.length;
     this.advanceTurn();
     return true;
   }
@@ -631,10 +672,15 @@ export class GameRoom {
     this.phase = "ROUND_END";
     this.roundResults = calculateRoundResults(this.players, this.caboCallerId);
 
-    // Update scores
+    // Update scores and play-style stats
     for (const result of this.roundResults.playerResults) {
       this.scores[result.playerId].push(result.roundScore);
       this.totalScores[result.playerId] += result.roundScore;
+      result.stats = { ...this.stat(result.playerId) };
+      this.gameStats[result.playerId] = addPlayerRoundStats(
+        this.gameStats[result.playerId] ?? emptyPlayerRoundStats(),
+        result.stats,
+      );
     }
 
     // Check if game should end
@@ -645,6 +691,7 @@ export class GameRoom {
       this.phase = "GAME_OVER";
     }
 
+    this.onRoundEnd?.(this.roundResults, gameOver);
     this.onStateUpdate?.();
   }
 
@@ -653,6 +700,23 @@ export class GameRoom {
     this.roundNumber++;
     this.startRound();
     this.onStateUpdate?.();
+  }
+
+  // ─── Play-Style Stats ───
+
+  private stat(playerId: string): PlayerRoundStats {
+    let stats = this.roundStats.get(playerId);
+    if (!stats) {
+      stats = emptyPlayerRoundStats();
+      this.roundStats.set(playerId, stats);
+    }
+    return stats;
+  }
+
+  private countOpponentSwap(playerId: string, receivedCard: Card): void {
+    const stats = this.stat(playerId);
+    stats.opponentSwaps++;
+    if (receivedCard.rank === BEST_RANK) stats.unicornsStolen++;
   }
 
   // ─── State Serialization ───
@@ -664,7 +728,6 @@ export class GameRoom {
       ? player.cards.map((card, index) => ({
           id: card.id,
           rank: player.peekedIndices.has(index) ? card.rank : null,
-          suit: player.peekedIndices.has(index) ? card.suit : null,
           isRevealed: player.peekedIndices.has(index),
         }))
       : [];
@@ -681,6 +744,7 @@ export class GameRoom {
 
     return {
       roomCode: this.code,
+      mode: this.mode,
       phase: this.phase,
       currentTurnPlayerId: this.currentPlayer?.id || null,
       players,
@@ -707,6 +771,7 @@ export class GameRoom {
         : 0,
       drawnFromDiscard: this.drawnFromDiscard.has(playerId),
       isMemorizeReady: this.memorizeReady.has(playerId),
+      gameStats: this.gameStats,
     };
   }
 }

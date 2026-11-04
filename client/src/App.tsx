@@ -3,10 +3,11 @@ import { useGameStore } from "./store/gameStore";
 import { LandingPage } from "./screens/LandingPage";
 import { LobbyScreen } from "./screens/LobbyScreen";
 import { GameScreen } from "./screens/GameScreen";
+import { ChampionshipScreen } from "./screens/ChampionshipScreen";
 import { Analytics } from "@vercel/analytics/react";
 
 const App: React.FC = () => {
-  const { gameState, roomCode, playerId, reconnectSession, initializeSocket } = useGameStore();
+  const { gameState, roomCode, playerId, championshipOpen, reconnectSession, initializeSocket } = useGameStore();
   const [isReconnecting, setIsReconnecting] = useState(false);
 
   useEffect(() => {
@@ -44,6 +45,9 @@ const App: React.FC = () => {
 
   // In a room, waiting for players
   if (roomCode && gameState?.phase === "WAITING") return <LobbyScreen />;
+
+  // Fane-Lebo Life Championship: standings, stats and player choice
+  if (championshipOpen) return <ChampionshipScreen />;
 
   // Landing page
   return <LandingPage />;

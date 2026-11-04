@@ -7,6 +7,7 @@ export const useLobbyScreen = () => {
     gameState,
     playerId,
     startGame,
+    leaveGame,
     initializeSocket,
   } = useGameStore();
 
@@ -25,6 +26,8 @@ export const useLobbyScreen = () => {
   };
 
   const isHost = gameState?.players[0]?.id === playerId;
+  const isChampionship = gameState?.mode === 'championship';
+  const connectedCount = gameState?.players.filter((p) => p.isConnected).length ?? 0;
 
   return {
     roomCode,
@@ -32,7 +35,10 @@ export const useLobbyScreen = () => {
     playerId,
     copied,
     isHost,
+    isChampionship,
+    connectedCount,
     handleCopyCode,
     startGame,
+    leaveGame,
   };
 };

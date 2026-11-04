@@ -1,29 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
-import { Card as CardType, Suit } from '@shared/types';
 import { useDrawAndDiscard } from '../hooks/useDrawAndDiscard';
-import { SUIT_ICONS, SUIT_COLORS } from '../constants/cards';
-
-const DiscardTopCard: React.FC<{ card: CardType }> = ({ card }) => {
-  const Icon = SUIT_ICONS[card.suit];
-  
-  return (
-    <div className={`absolute inset-0 p-1.5 flex flex-col justify-between ${SUIT_COLORS[card.suit]}`}>
-      <div className="flex flex-col items-start leading-none gap-0.5">
-        <span className="font-bold font-display text-sm">{card.rank}</span>
-        <Icon size={12} fill="currentColor" strokeWidth={1} />
-      </div>
-      <div className="flex items-center justify-center flex-1">
-        <Icon size={24} fill="currentColor" strokeWidth={1} />
-      </div>
-      <div className="flex flex-col items-end leading-none gap-0.5 rotate-180">
-        <span className="font-bold font-display text-sm">{card.rank}</span>
-        <Icon size={12} fill="currentColor" strokeWidth={1} />
-      </div>
-    </div>
-  );
-};
+import { CardFace } from './CardFace';
 
 export const DrawAndDiscard: React.FC = () => {
   const {
@@ -54,9 +33,8 @@ export const DrawAndDiscard: React.FC = () => {
           `}
           whileTap={canDraw ? { scale: 0.95 } : {}}
         >
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-cabo-accent/50 font-display font-bold text-xl">C</span>
-            <span className="text-cabo-textDim text-[10px] mt-1">{gameState.deckCount}</span>
+          <div className="absolute inset-0 flex items-center justify-center text-sm">
+            <span className="card-back-number">{gameState.deckCount}</span>
           </div>
         </motion.div>
         <span className="text-cabo-textDim text-xs font-display">Draw</span>
@@ -94,10 +72,10 @@ export const DrawAndDiscard: React.FC = () => {
         <motion.div
           onClick={canDraw && gameState.discardTop ? drawFromDiscard : undefined}
           className={`
-            relative w-20 h-28 rounded-xl border shadow-xl overflow-hidden
+            relative w-20 h-28 rounded-xl border shadow-xl overflow-hidden text-sm
             transition-all duration-300
             ${gameState.discardTop
-              ? 'bg-gradient-to-br from-white to-gray-100 border-gray-300'
+              ? 'bg-cabo-surface border-cabo-border'
               : 'border-dashed border-cabo-border bg-cabo-surface/30'
             }
             ${canDraw && gameState.discardTop ? 'cursor-pointer hover:shadow-cabo-accent/20' : ''}
@@ -105,7 +83,7 @@ export const DrawAndDiscard: React.FC = () => {
           whileTap={canDraw && gameState.discardTop ? { scale: 0.95 } : {}}
         >
           {gameState.discardTop ? (
-            <DiscardTopCard card={gameState.discardTop} />
+            <CardFace rank={gameState.discardTop.rank} />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <span className="text-cabo-textDim text-xs">Empty</span>

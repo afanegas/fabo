@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLobbyScreen } from '../hooks/useLobbyScreen';
+import { CHAMPIONS } from '@shared/championship';
+import { CHAMPION_COLORS } from '../constants/championship';
 
 export const LobbyScreen: React.FC = () => {
   const {
@@ -9,11 +11,63 @@ export const LobbyScreen: React.FC = () => {
     playerId,
     copied,
     isHost,
+    isChampionship,
+    connectedCount,
     handleCopyCode,
     startGame,
+    leaveGame,
   } = useLobbyScreen();
 
   if (!roomCode || !gameState || gameState.phase !== 'WAITING') return null;
+
+  if (isChampionship) {
+    const opponentMissing = connectedCount < 2;
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 table-felt">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-panel p-8 max-w-md w-full space-y-6 text-center"
+        >
+          <h2 className="text-2xl font-display font-bold text-cabo-accent">🏆 Fane vs Lebo</h2>
+
+          <div className="flex flex-col gap-2">
+            {CHAMPIONS.map(({ id, name }) => {
+              const p = gameState.players.find((pl) => pl.id === id);
+              const here = !!p?.isConnected;
+              return (
+                <div key={id} className="flex items-center gap-3 bg-cabo-surface/50 rounded-lg px-4 py-2">
+                  <div className={`w-2 h-2 rounded-full ${here ? 'bg-cabo-green' : 'bg-cabo-border'}`} />
+                  <span className="font-display text-sm" style={{ color: CHAMPION_COLORS[id] }}>
+                    {name}
+                    {id === playerId && <span className="text-cabo-accent ml-1">(You)</span>}
+                  </span>
+                  {!here && <span className="text-cabo-textDim text-xs ml-auto">not here yet</span>}
+                </div>
+              );
+            })}
+          </div>
+
+          {opponentMissing ? (
+            <p className="text-cabo-textDim text-sm animate-pulse">Waiting for your opponent...</p>
+          ) : (
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              onClick={startGame}
+              className="btn-primary w-full text-lg"
+            >
+              Start Game 🎴
+            </motion.button>
+          )}
+
+          <button onClick={leaveGame} className="text-cabo-textDim hover:text-cabo-text text-sm font-display">
+            Leave
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 table-felt">

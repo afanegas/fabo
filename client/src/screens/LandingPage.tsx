@@ -18,6 +18,7 @@ export const LandingPage: React.FC = () => {
     handleCreateRoom,
     handleJoinRoom,
     handleSubmitJoin,
+    handleOpenChampionship,
   } = useLandingPage();
 
   return (
@@ -32,6 +33,7 @@ export const LandingPage: React.FC = () => {
         onSubmitJoin={handleSubmitJoin}
         error={error}
         onShowRules={() => setShowRules(true)}
+        onOpenChampionship={handleOpenChampionship}
       />
 
       <TutorialSection />

@@ -10,3 +10,6 @@ node_modules
 render.yaml
 docker-compose.yml
 Dockerfile
+data
+data-dev
+art

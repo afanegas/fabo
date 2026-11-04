@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { ClientGameState, Card, ActionType, GamePhase } from '@shared/types';
 import { CONFIG } from '@shared/rules';
+import { ChampionId } from '@shared/championship';
 import { socketService, SocketEvents } from '../services/socket';
 
 interface GameStore {
@@ -24,12 +25,15 @@ interface GameStore {
   peekedCard: Card | null;
   showPeekedCard: boolean;
   snapNotification: string | null;
+  championshipOpen: boolean;
 
   // Actions
   setPlayerName: (name: string) => void;
   setError: (error: string | null) => void;
   createRoom: () => Promise<void>;
   joinRoom: (code: string) => Promise<void>;
+  joinChampionship: (champion: ChampionId) => Promise<void>;
+  setChampionshipOpen: (open: boolean) => void;
   startGame: () => Promise<void>;
   peekInitialCard: (index: number) => Promise<void>;
   doneMemorizing: () => Promise<void>;
@@ -71,6 +75,7 @@ export const useGameStore = create<GameStore>()(
   peekedCard: null,
   showPeekedCard: false,
   snapNotification: null,
+  championshipOpen: false,
 
   setPlayerName: (name) => set({ playerName: name }),
   
@@ -184,6 +189,23 @@ export const useGameStore = create<GameStore>()(
       get().setError('Connection failed');
     }
   },
+
+  joinChampionship: async (champion) => {
+    try {
+      socketService.connect();
+      const res: any = await socketService.emit(SocketEvents.JOIN_CHAMPIONSHIP, { champion });
+      if (res.success) {
+        set({ roomCode: res.roomCode, playerId: res.playerId, isConnected: true });
+        get().setError(null);
+      } else {
+        get().setError(res.error || 'Failed to join championship');
+      }
+    } catch (err) {
+      get().setError('Connection failed');
+    }
+  },
+
+  setChampionshipOpen: (open) => set({ championshipOpen: open }),
 
   startGame: async () => {
     try {
@@ -380,6 +402,7 @@ export const useGameStore = create<GameStore>()(
         playerId: state.playerId,
         playerName: state.playerName,
         roomCode: state.roomCode,
+        championshipOpen: state.championshipOpen,
       }),
     },
   ),

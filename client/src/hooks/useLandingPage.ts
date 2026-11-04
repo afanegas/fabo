@@ -9,6 +9,7 @@ export const useLandingPage = () => {
     createRoom,
     joinRoom,
     initializeSocket,
+    setChampionshipOpen,
   } = useGameStore();
 
   const [joinCode, setJoinCode] = useState("");
@@ -44,5 +45,6 @@ export const useLandingPage = () => {
     handleCreateRoom,
     handleJoinRoom,
     handleSubmitJoin,
+    handleOpenChampionship: () => setChampionshipOpen(true),
   };
 };

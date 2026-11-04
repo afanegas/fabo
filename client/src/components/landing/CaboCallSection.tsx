@@ -134,21 +134,21 @@ export const CaboCallSection: React.FC = () => {
               <h3 className="font-display font-bold text-cabo-accent text-sm">Legendary Instant Win</h3>
             </div>
             <p className="text-cabo-textDim text-sm leading-relaxed">
-              Hold exactly two <strong className="text-cabo-accent">Qs</strong> and two{' '}
-              <strong className="text-cabo-accent">Ks</strong> to instantly win and slam every opponent with{' '}
+              Hold exactly two <strong className="text-cabo-accent">12s</strong> and two{' '}
+              <strong className="text-cabo-accent">13s</strong> to instantly win and slam every opponent with{' '}
               <strong className="text-cabo-accent">{CONFIG.SPECIAL_WIN_PENALTY} penalty points</strong>.
             </p>
           </motion.div>
         </div>
 
-        {/* Q-Q-K-K display */}
+        {/* 12-12-13-13 display */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ delay: 1, duration: 0.6 }}
           className="flex justify-center gap-2"
         >
-          {['Q', 'Q', 'K', 'K'].map((val, i) => (
+          {['12', '12', '13', '13'].map((val, i) => (
             <motion.div
               key={i}
               animate={isInView ? {

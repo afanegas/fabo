@@ -25,11 +25,11 @@ export const GAME_RULES_SLIDES = [
       "The goal of CABO is to have the lowest sum of cards in front of you. When you think you have the lowest score, call 'CABO'!",
     visual: (
       <SlideVisual>
-        <Card size="sm" card={{ rank: 'A', suit: "spades" } as any} disabled />
+        <Card size="sm" card={{ rank: '1' } as any} disabled />
         <span className="text-2xl font-bold font-display text-cabo-textDim">
           +
         </span>
-        <Card size="sm" card={{ rank: 2, suit: "hearts" } as any} disabled />
+        <Card size="sm" card={{ rank: '2' } as any} disabled />
         <span className="text-2xl font-bold font-display text-cabo-textDim">
           =
         </span>
@@ -103,7 +103,7 @@ export const GAME_RULES_SLIDES = [
           ➔
         </motion.div>
         <div className="flex flex-col items-center gap-2">
-          <Card size="sm" card={{ rank: 5, suit: "diamonds" } as any} disabled />
+          <Card size="sm" card={{ rank: '5' } as any} disabled />
           <span className="text-xs tracking-widest uppercase font-display text-cabo-textDim">
             Discard
           </span>
@@ -120,14 +120,14 @@ export const GAME_RULES_SLIDES = [
       <SlideVisual>
         <div className="relative w-32 h-24">
           <div className="absolute top-0 left-0 transform -rotate-6">
-            <Card size="sm" card={{ rank: 8, suit: "spades" } as any} disabled />
+            <Card size="sm" card={{ rank: '8' } as any} disabled />
           </div>
           <div className="absolute top-2 left-6 transform rotate-6">
-            <Card size="sm" card={{ rank: 8, suit: "hearts" } as any} disabled />
+            <Card size="sm" card={{ rank: '8' } as any} disabled />
           </div>
         </div>
         <span className="text-2xl text-cabo-textDim mx-2">↔️</span>
-        <Card size="sm" card={{ rank: 2, suit: "clubs" } as any} disabled />
+        <Card size="sm" card={{ rank: '2' } as any} disabled />
       </SlideVisual>
     ),
   },
@@ -138,13 +138,13 @@ export const GAME_RULES_SLIDES = [
       "SNAP an EXACT MATCH from your hand to the top discard card at any time—even out of turn! ⚠️ Penalty: Snapping a wrong card adds 1 penalty card to your grid.",
     visual: (
       <SlideVisual>
-        <Card size="sm" card={{ rank: 10, suit: "hearts" } as any} disabled />
+        <Card size="sm" card={{ rank: '10' } as any} disabled />
         <motion.div
           initial={{ x: 50, y: -20, rotate: 15 }}
           animate={{ x: 0, y: 0, rotate: 0 }}
           transition={{ repeat: Infinity, duration: 2 }}
         >
-          <Card size="sm" card={{ rank: 10, suit: "spades" } as any} glowing disabled />
+          <Card size="sm" card={{ rank: '10' } as any} glowing disabled />
         </motion.div>
       </SlideVisual>
     ),
@@ -153,23 +153,23 @@ export const GAME_RULES_SLIDES = [
     title: "Power Cards",
     icon: "⚡",
     content:
-      `${getCardsForAction('PEEK')}: PEEK at your own card.\n${getCardsForAction('SPY')}: SPY on an opponent's card.\n${getCardsForAction('SWAP')} & Q: SWAP a card with an opponent. Use Q to LOOK at it first!\nJust remember, action cards only work when drawn from the deck and discarded immediately!`,
+      `${getCardsForAction('PEEK')}: PEEK at your own card.\n${getCardsForAction('SPY')}: SPY on an opponent's card.\n${getCardsForAction('SWAP')}: blindly SWAP one of your cards with an opponent's card.\nJust remember, action cards only work when drawn from the deck and discarded immediately!`,
     visual: (
       <SlideVisual>
         <div className="flex flex-col items-center group">
-          <Card size="sm" card={{ rank: 7, suit: "clubs" } as any} glowing disabled />
+          <Card size="sm" card={{ rank: '7' } as any} glowing disabled />
           <span className="mt-2 text-xs font-bold text-cabo-accent font-display">
             PEEK
           </span>
         </div>
         <div className="flex flex-col items-center group">
-          <Card size="sm" card={{ rank: 9, suit: "spades" } as any} glowing disabled />
+          <Card size="sm" card={{ rank: '9' } as any} glowing disabled />
           <span className="mt-2 text-xs font-bold text-cabo-accent font-display">
             SPY
           </span>
         </div>
         <div className="flex flex-col items-center group">
-          <Card size="sm" card={{ rank: 'J', suit: "hearts" } as any} glowing disabled />
+          <Card size="sm" card={{ rank: '11' } as any} glowing disabled />
           <span className="mt-2 text-xs font-bold text-cabo-accent font-display">
             SWAP
           </span>
@@ -205,13 +205,13 @@ export const GAME_RULES_SLIDES = [
     title: "Kamikaze (Special Win)",
     icon: "👑",
     content:
-      `If you end the round with exactly two Qs and two Ks, you instantly win the round! You get 0 points, and every other player is slammed with ${CONFIG.SPECIAL_WIN_PENALTY} penalty points.`,
+      `If you end the round with exactly two 12s and two 13s, you instantly win the round! You get 0 points, and every other player is slammed with ${CONFIG.SPECIAL_WIN_PENALTY} penalty points.`,
     visual: (
       <SlideVisual>
-        <Card size="sm" card={{ rank: 'Q', suit: "hearts" } as any} disabled glowing />
-        <Card size="sm" card={{ rank: 'Q', suit: "spades" } as any} disabled glowing />
-        <Card size="sm" card={{ rank: 'K', suit: "clubs" } as any} disabled glowing />
-        <Card size="sm" card={{ rank: 'K', suit: "diamonds" } as any} disabled glowing />
+        <Card size="sm" card={{ rank: '12' } as any} disabled glowing />
+        <Card size="sm" card={{ rank: '12' } as any} disabled glowing />
+        <Card size="sm" card={{ rank: '13' } as any} disabled glowing />
+        <Card size="sm" card={{ rank: '13' } as any} disabled glowing />
       </SlideVisual>
     ),
   },

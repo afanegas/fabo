@@ -1,8 +1,6 @@
-import { Card, Rank, Suit } from '../../shared/types';
+import { Card } from '../../shared/types';
+import { RANKS, RANK_COPIES } from '../../shared/rules';
 import { v4 as uuidv4 } from 'uuid';
-
-const SUITS: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
-const RANKS: Rank[] = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
 export class Deck {
   cards: Card[] = [];
@@ -13,9 +11,9 @@ export class Deck {
 
   reset(): void {
     this.cards = [];
-    for (const suit of SUITS) {
-      for (const rank of RANKS) {
-        this.cards.push({ id: uuidv4(), rank, suit });
+    for (const rank of RANKS) {
+      for (let i = 0; i < RANK_COPIES[rank]; i++) {
+        this.cards.push({ id: uuidv4(), rank });
       }
     }
     this.shuffle();

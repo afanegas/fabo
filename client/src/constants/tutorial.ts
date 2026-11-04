@@ -1,3 +1,4 @@
+import { Rank } from '@shared/types';
 import { CARD_ACTIONS } from './cards';
 
 const getCardsForAction = (action: string) => {
@@ -7,11 +8,11 @@ const getCardsForAction = (action: string) => {
     .join(' & ');
 };
 
-export const TUTORIAL_CARDS = [
-  { value: '3', suit: 'hearts' },
-  { value: 'K', suit: 'spades' },
-  { value: '5', suit: 'diamonds' },
-  { value: '8', suit: 'clubs' },
+export const TUTORIAL_CARDS: { value: Rank }[] = [
+  { value: '3' },
+  { value: '0' },
+  { value: '5' },
+  { value: '8' },
 ];
 
 export const TUTORIAL_ACTIONS = [
@@ -34,7 +35,7 @@ export const TUTORIAL_ACTIONS = [
   {
     icon: '🔄',
     name: 'Swap',
-    cards: `${getCardsForAction('SWAP')} & ${getCardsForAction('LOOK_AND_SWAP')}`,
+    cards: getCardsForAction('SWAP'),
     description: "Blind swap — exchange one of your cards with an opponent's. Neither player sees what moves.",
     color: '#6c3483',
     gradient: 'from-purple-500/20 to-violet-600/10',

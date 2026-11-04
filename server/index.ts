@@ -7,8 +7,18 @@ import { v4 as uuidv4 } from "uuid";
 import { SocketEvents } from "../shared/types";
 import { GameRoom } from "./game/GameRoom";
 import { CONFIG } from "../shared/rules";
+import {
+  CHAMPIONSHIP_ROOM_CODE,
+  CHAMPIONS,
+  isChampionId,
+} from "../shared/championship";
+import { ChampionshipStore } from "./championship/ChampionshipStore";
+import { recordChampionshipGames } from "./championship/ChampionshipRecorder";
 
 const app = express();
+const championshipStore = new ChampionshipStore(
+  process.env.DATA_DIR || path.resolve("data"),
+);
 const allowedOrigins = process.env.CLIENT_URL
   ? [process.env.CLIENT_URL, "http://localhost:5173", "http://localhost:3000"]
   : ["http://localhost:5173", "http://localhost:3000"];
@@ -50,6 +60,39 @@ function broadcastState(room: GameRoom): void {
   }
 }
 
+function setupRoomCallbacks(room: GameRoom): void {
+  room.onStateUpdate = () => broadcastState(room);
+  room.onSnapWindowClose = () => {
+    io.to(room.code).emit(SocketEvents.SNAP_WINDOW_CLOSED);
+    broadcastState(room);
+  };
+}
+
+// The championship has one fixed room. A finished game is replaced by a
+// fresh room as soon as someone joins again.
+function getChampionshipRoom(): GameRoom {
+  const existing = rooms.get(CHAMPIONSHIP_ROOM_CODE);
+  if (
+    existing &&
+    existing.phase !== "GAME_OVER" &&
+    existing.phase !== "ABANDONED"
+  ) {
+    return existing;
+  }
+
+  if (existing) {
+    // Players still looking at the old game no longer receive its events
+    for (const p of existing.players) playerRooms.delete(p.socketId);
+    io.in(CHAMPIONSHIP_ROOM_CODE).socketsLeave(CHAMPIONSHIP_ROOM_CODE);
+  }
+
+  const room = new GameRoom(CHAMPIONSHIP_ROOM_CODE, "championship");
+  setupRoomCallbacks(room);
+  recordChampionshipGames(room, championshipStore);
+  rooms.set(CHAMPIONSHIP_ROOM_CODE, room);
+  return room;
+}
+
 // ─── Socket Event Handlers ───
 
 io.on("connection", (socket: Socket) => {
@@ -67,13 +110,7 @@ io.on("connection", (socket: Socket) => {
       playerRooms.set(socket.id, code);
 
       socket.join(code);
-
-      // Set up room callbacks
-      room.onStateUpdate = () => broadcastState(room);
-      room.onSnapWindowClose = () => {
-        io.to(code).emit(SocketEvents.SNAP_WINDOW_CLOSED);
-        broadcastState(room);
-      };
+      setupRoomCallbacks(room);
 
       callback({ success: true, roomCode: code, playerId });
       broadcastState(room);
@@ -85,7 +122,7 @@ io.on("connection", (socket: Socket) => {
     SocketEvents.JOIN_ROOM,
     (data: { roomCode: string; playerName: string }, callback: any) => {
       const room = rooms.get(data.roomCode.toUpperCase());
-      if (!room) {
+      if (!room || room.mode !== "normal") {
         callback({ success: false, error: "Room not found" });
         return;
       }
@@ -113,12 +150,51 @@ io.on("connection", (socket: Socket) => {
     },
   );
 
+  // ─── Join Championship (Fane or Lebo) ───
+  socket.on(
+    SocketEvents.JOIN_CHAMPIONSHIP,
+    (data: { champion: string }, callback: any) => {
+      if (!isChampionId(data?.champion))
+        return callback?.({ success: false, error: "Choose Fane or Lebo" });
+
+      const champion = CHAMPIONS.find((c) => c.id === data.champion)!;
+      const room = getChampionshipRoom();
+      const existing = room.getPlayer(champion.id);
+
+      if (existing) {
+        if (existing.isConnected)
+          return callback?.({
+            success: false,
+            error: `${champion.name} is already playing`,
+          });
+        // Same champion coming back (reload, other device): take over the seat
+        playerRooms.delete(existing.socketId);
+        existing.socketId = socket.id;
+        existing.isConnected = true;
+      } else if (!room.addPlayer(champion.id, champion.name, socket.id)) {
+        return callback?.({
+          success: false,
+          error: "A championship game is already running",
+        });
+      }
+
+      playerRooms.set(socket.id, room.code);
+      socket.join(room.code);
+
+      callback?.({ success: true, roomCode: room.code, playerId: champion.id });
+      broadcastState(room);
+    },
+  );
+
   // ─── Start Game ───
   socket.on(SocketEvents.START_GAME, (_: any, callback: any) => {
     const { room, player } = getContext(socket);
     if (!room || !player)
       return callback?.({ success: false, error: "Not in a room" });
-    if (player.id !== room.hostId)
+    if (room.mode === "championship") {
+      if (room.activePlayers.length < 2)
+        return callback?.({ success: false, error: "Waiting for opponent" });
+    } else if (player.id !== room.hostId)
       return callback?.({ success: false, error: "Only host can start" });
 
     const started = room.startGame();
@@ -310,8 +386,8 @@ io.on("connection", (socket: Socket) => {
     callback?.({ success: true });
     broadcastState(room);
 
-    // Clean up empty rooms
-    if (room.activePlayers.length === 0) {
+    // Clean up empty rooms (the championship room is replaced on next join)
+    if (room.activePlayers.length === 0 && room.mode === "normal") {
       rooms.delete(room.code);
     }
   });
@@ -361,8 +437,9 @@ io.on("connection", (socket: Socket) => {
           broadcastState(room);
         }
 
-        // Clean up empty rooms
-        if (room.activePlayers.length === 0) {
+        // Clean up empty rooms. A championship game survives both players
+        // dropping out at once (e.g. both reloading) so it can be resumed.
+        if (room.activePlayers.length === 0 && room.mode === "normal") {
           rooms.delete(roomCode);
         }
       }
@@ -387,6 +464,22 @@ function getContext(socket: Socket): {
 
 // ─── Health Check ───
 app.get("/health", (_: any, res: any) => res.json({ status: "ok" }));
+
+// ─── Championship API ───
+app.get("/api/championship", (req: any, res: any) => {
+  const season = req.query.season ? Number(req.query.season) : undefined;
+  const response = championshipStore.getResponse(season);
+  if (!response) return res.status(404).json({ error: "Season not found" });
+  res.json(response);
+});
+
+// JSON body required: forces a CORS preflight, so other sites cannot trigger it
+app.post("/api/championship/reset", express.json(), (req: any, res: any) => {
+  if (req.body?.confirm !== "RESET")
+    return res.status(400).json({ error: "Confirmation missing" });
+  const season = championshipStore.reset();
+  res.json({ season });
+});
 
 // ─── Start Server ───
 // Docker: the built client is served by this server (same origin, no CORS).
