@@ -33,7 +33,7 @@
   }
 
   .card-face-down {
-    background: #2a1f4e url('./assets/cards/back.webp') center / cover no-repeat;
+    background: #c96a6a url('./assets/cards/back.webp') center / cover no-repeat;
   }
 
   /* Card value on top of the illustration, readable even on small cards */
@@ -43,12 +43,28 @@
     text-shadow: 0 0 4px rgba(20, 12, 45, 0.9), 0 1px 2px rgba(20, 12, 45, 0.9);
   }
 
-  /* Position number inside the empty medallion of the card back */
+  /* Action of a power card (Peek, Spy, Swap), centered on the illustration */
+  .card-action {
+    @apply font-display font-bold uppercase leading-none text-white rounded-full;
+    font-size: 0.8em;
+    letter-spacing: 0.08em;
+    padding: 0.35em 0.7em;
+    background: rgba(20, 12, 45, 0.6);
+    border: 1px solid rgba(255, 240, 210, 0.45);
+    box-shadow: 0 0 8px rgba(255, 240, 210, 0.25);
+    backdrop-filter: blur(2px);
+  }
+
+  /* Position number in a small dark circle on the patterned card back */
   .card-back-number {
-    @apply font-display font-bold leading-none;
-    color: rgba(255, 240, 210, 0.9);
-    font-size: 1.2em;
-    text-shadow: 0 0 6px rgba(42, 31, 78, 0.9);
+    @apply font-display font-bold leading-none flex items-center justify-center rounded-full;
+    color: rgba(255, 240, 210, 0.95);
+    font-size: 1.1em;
+    min-width: 1.9em;
+    height: 1.9em;
+    padding: 0 0.4em;
+    background: rgba(60, 20, 45, 0.7);
+    border: 1px solid rgba(255, 240, 210, 0.5);
   }
 
   .card-glow {
