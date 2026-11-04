@@ -20,23 +20,114 @@ A real-time multiplayer card game built with React and Socket.IO. Play the class
 | Server   | Node.js, Express, Socket.IO               |
 | State    | Zustand (client), in-memory (server)      |
 | Extras   | Framer Motion, React Three Fiber, Lucide  |
-| Deploy   | Vercel (client) · Render (server)         |
+| Deploy   | Docker, behind Traefik with BasicAuth     |
 
 ## Project Structure
 
 ```
+├── art/cards/       # Original card artwork (not shipped)
 ├── client/          # React frontend (Vite)
 ├── server/          # Express + Socket.IO backend
-└── shared/          # Shared types, rules & game config
+├── shared/          # Shared types, rules & game config
+├── Dockerfile       # One image: server also serves the built client
+├── docker-compose.yml      # Production, behind Traefik
+└── docker-compose.dev.yml  # Local test on this machine, no Traefik
 ```
 
-## Getting Started
+## Run with Docker
 
-### Prerequisites
+The image builds client and server and runs both in one container on port 8080.
+Running games live in memory only; the championship standings are stored in
+`championship.json` in the mounted data folder.
 
-- Node.js ≥ 18
+### Local test (Windows, macOS or Linux)
 
-### Install & Run
+Requires Docker Desktop (or Docker Engine with the compose plugin).
+
+```bash
+git clone https://github.com/afanegas/fabo.git
+cd fabo
+docker compose -f docker-compose.dev.yml up --build -d
+```
+
+Open http://localhost:8080. The port is bound to `127.0.0.1` only, and test data
+goes to `./data-dev`, so it never mixes with real championship data.
+
+Stop it with:
+
+```bash
+docker compose -f docker-compose.dev.yml down
+```
+
+### Server installation (Ubuntu, behind Traefik)
+
+Prerequisites:
+
+- Docker Engine with the compose plugin
+- A running Traefik 3 with the external network `traefik_proxy`, an entrypoint
+  `websecure` and a certificate resolver `le`
+- A DNS record for your domain pointing to the server
+
+```bash
+git clone https://github.com/afanegas/fabo.git
+cd fabo
+
+# Settings: domain and BasicAuth user (see comments in the file)
+cp .env.example .env
+nano .env
+
+# Data folder for the championship, owned by the container user (uid 1000)
+mkdir -p data && sudo chown 1000:1000 data
+
+docker compose up -d --build
+```
+
+Create the BasicAuth hash for `.env` with:
+
+```bash
+docker run --rm httpd:2.4-alpine htpasswd -nbB yourname 'YourPassword'
+```
+
+Put the whole output in single quotes, e.g. `CABO_BASIC_AUTH='yourname:$2y$05$...'`.
+
+The container publishes no port itself; it is only reachable through Traefik and
+its password prompt.
+
+### Update
+
+On the server, in the `fabo` folder:
+
+```bash
+git pull
+docker compose up -d --build
+docker image prune -f
+```
+
+`git pull` fetches the new code, `up -d --build` rebuilds the image and replaces
+the running container, `image prune` removes the old image. The championship data
+in `./data` and the `.env` are kept. Games running during the update are lost, so
+update between games.
+
+Check that it is running:
+
+```bash
+docker compose ps
+docker compose logs --tail 50 cabo
+```
+
+For the local test setup, use the same commands with `-f docker-compose.dev.yml`.
+
+### Backup
+
+The championship standings are a single file. Copy the folder to keep a backup:
+
+```bash
+cp -r data data-backup-$(date +%F)
+```
+
+## Development without Docker
+
+Requires Node.js ≥ 18.
 
 ```bash
 # Install all dependencies (root + client + server)
@@ -46,7 +137,7 @@ npm run install:all
 npm run dev
 ```
 
-The client runs on `http://localhost:5173` and the server on `http://localhost:8080`.
+The client runs on `http://localhost:5173` and the server on `http://localhost:3001`.
 
 ## Game Rules
 
@@ -64,7 +155,11 @@ The client runs on `http://localhost:5173` and the server on `http://localhost:8
 - Failed Cabo call = **+10 penalty**.
 - Ending a round with exactly two 12s and two 13s is an instant win: everyone else gets **50 points**.
 
-Card artwork originals live in `art/cards/`; the game uses the WebP versions in `client/src/assets/cards/`.
+## Card Artwork
+
+Originals live in `art/cards/` (`0`–`13` and `back`). The game uses 400×600 WebP
+versions in `client/src/assets/cards/` with the same names. When you replace an
+image, convert it to WebP under the same name and rebuild the container.
 
 ## License
 
