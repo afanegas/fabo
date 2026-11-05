@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Card } from './Card';
 import { usePlayerHand } from '../hooks/usePlayerHand';
+import { CardActionMarker } from './CardActionMarker';
 
 interface PlayerHandProps {
   centerSlot?: React.ReactNode;
@@ -11,7 +12,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({ centerSlot }) => {
   const {
     gameState,
     playerId,
-    actionHighlights,
+    highlights,
     drawnCard,
     selectedCardIndex,
     swapSelection,
@@ -24,8 +25,8 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({ centerSlot }) => {
 
   if (!gameState) return null;
 
-  const isHighlighted = (index: number) =>
-    actionHighlights.some((h) => h.playerId === playerId && h.cardIndex === index);
+  const highlightAt = (index: number) =>
+    highlights.find((h) => h.playerId === playerId && h.cardIndex === index);
   const showSwapButton = swapSelection.length > 0 && drawnCard && !actionMode;
   const swapLabel = swapSelection.length === 1 ? 'Swap selected card' : `Swap ${swapSelection.length} cards for 1`;
 
@@ -39,15 +40,17 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({ centerSlot }) => {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1, type: 'spring', stiffness: 200 }}
+            className="relative"
           >
             <Card
               card={card}
               faceDown={!card.isRevealed}
               onClick={() => handleCardClick(index)}
               selected={selectedCardIndex === index || swapSelection.includes(index)}
-              glowing={snapActive || isHighlighted(index)}
+              glowing={snapActive || !!highlightAt(index)}
               size="lg"
             />
+            <CardActionMarker highlight={highlightAt(index)} />
           </motion.div>
         ))}
       </div>

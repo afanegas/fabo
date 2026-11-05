@@ -16,6 +16,8 @@ export const GameScreen: React.FC = () => {
     error,
     snapNotification,
     actionNotice,
+    personalNotices,
+    dismissPersonalNotice,
     leaveGame,
   } = useGameStore();
 
@@ -36,7 +38,7 @@ export const GameScreen: React.FC = () => {
 
   return (
     <div className={`
-      min-h-screen table-felt flex flex-col relative overflow-hidden
+      h-[100dvh] table-felt flex flex-col relative overflow-hidden
       ${caboAlertActive ? 'cabo-alert-border border-4' : ''}
     `}>
       {/* Cabo Alert Overlay */}
@@ -55,7 +57,7 @@ export const GameScreen: React.FC = () => {
       </AnimatePresence>
 
       {/* Top bar */}
-      <div className="flex justify-between items-center px-4 py-2 bg-cabo-darker/80 backdrop-blur-sm border-b border-cabo-border/30 z-10">
+      <div className="shrink-0 flex justify-between items-center px-4 py-2 bg-cabo-darker/80 backdrop-blur-sm border-b border-cabo-border/30 z-10">
         <div className="flex items-center gap-3">
           <h1
             className="font-display font-bold text-lg"
@@ -70,15 +72,6 @@ export const GameScreen: React.FC = () => {
           <span className="text-cabo-textDim text-xs">R{gameState.roundNumber}</span>
         </div>
         <div className="flex items-center gap-3">
-          {gameState.phase === 'CABO_CALLED' && (
-            <motion.span
-              animate={{ opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="text-cabo-red text-xs font-display font-bold"
-            >
-              CABO CALLED — Final Turns!
-            </motion.span>
-          )}
           <span className="text-cabo-textDim text-xs font-display">
             {gameState.roomCode}
           </span>
@@ -91,6 +84,17 @@ export const GameScreen: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Cabo called: full-width strip, always in view */}
+      {gameState.phase === 'CABO_CALLED' && (
+        <motion.div
+          animate={{ opacity: [0.75, 1, 0.75] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          className="shrink-0 bg-cabo-red text-white text-center text-xs md:text-sm font-display font-bold py-1 z-10"
+        >
+          🔔 CABO called by {gameState.players.find(p => p.id === gameState.caboCallerId)?.name} — final turns!
+        </motion.div>
+      )}
 
       {/* Error toast */}
       <AnimatePresence>
@@ -120,22 +124,42 @@ export const GameScreen: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* An opponent used Peek, Spy or Swap */}
-      <AnimatePresence>
-        {actionNotice && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute top-14 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-sm text-center bg-cabo-accent/95 text-cabo-dark px-4 py-2 rounded-xl text-sm font-display font-semibold shadow-lg"
-          >
-            {actionNotice}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* An opponent used Peek, Spy or Swap: on my cards it stays until I tap OK */}
+      <div className="absolute top-12 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-sm flex flex-col gap-2">
+        <AnimatePresence>
+          {personalNotices.map((n) => (
+            <motion.div
+              key={n.id}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex items-center gap-3 bg-cabo-red/95 text-white pl-4 pr-2 py-2 rounded-xl text-sm font-display font-semibold shadow-lg"
+            >
+              <span className="flex-1">{n.text}</span>
+              <button
+                onClick={() => dismissPersonalNotice(n.id)}
+                className="shrink-0 bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1 text-xs font-bold"
+              >
+                OK
+              </button>
+            </motion.div>
+          ))}
+          {actionNotice && (
+            <motion.div
+              key="banner"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="text-center bg-cabo-accent/95 text-cabo-dark px-4 py-2 rounded-xl text-sm font-display font-semibold shadow-lg"
+            >
+              {actionNotice}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Opponents Desktop Layout */}
-      <div className="hidden md:flex justify-center gap-3 px-4 py-3 flex-wrap">
+      <div className="hidden md:flex shrink-0 justify-center gap-3 px-4 py-3 flex-wrap">
         {opponents.map(p => (
           <OpponentDisplay
             key={p.id}
@@ -146,7 +170,7 @@ export const GameScreen: React.FC = () => {
       </div>
 
       {/* Opponents Mobile Layout */}
-      <div className="md:hidden flex flex-col w-full px-2 py-2 gap-2">
+      <div className="md:hidden flex flex-col w-full px-2 py-1 gap-1 shrink-0">
         {opponents.length > 0 && (
           <div className="flex justify-center w-full">
             <OpponentDisplay
@@ -187,13 +211,13 @@ export const GameScreen: React.FC = () => {
         )}
       </div>
 
-      {/* Center: Draw & Discard piles */}
-      <div className="flex-1 flex items-center justify-center">
+      {/* Center: Draw & Discard piles, takes the space that is left */}
+      <div className="flex-1 min-h-0 flex items-center justify-center">
         <DrawAndDiscard />
       </div>
 
       {/* Turn indicator */}
-      <div className="text-center py-1">
+      <div className="text-center py-1 px-2 shrink-0">
         {gameState.snapWindowActive && (
           <motion.p
             initial={{ opacity: 0, scale: 0.9 }}
@@ -209,7 +233,9 @@ export const GameScreen: React.FC = () => {
             animate={{ opacity: 1 }}
             className="text-cabo-accent font-display text-sm font-semibold"
           >
-            {drawnCard ? 'Select a card to swap (or several of the same value), or Discard' :
+            {drawnCard ? (gameState.drawnFromDiscard
+                ? 'Select a card to swap (or several of the same value)'
+                : 'Select a card to swap (or several of the same value), or Discard') :
               actionMode ? `Use your ${actionMode} action` :
               'Your turn — Draw or Call Cabo'}
           </motion.p>
@@ -232,7 +258,7 @@ export const GameScreen: React.FC = () => {
       </div>
 
       {/* Player's hand */}
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-3 md:pb-4 shrink-0">
         <PlayerHand
           centerSlot={
             <>

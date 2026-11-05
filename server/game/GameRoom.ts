@@ -821,6 +821,8 @@ export class GameRoom {
       gameStats: this.gameStats,
       settings: this.settings,
       lastAction: this.lastAction,
+      discardBlocked:
+        !!this.currentPlayer && this.drawnFromDiscard.has(this.currentPlayer.id),
     };
   }
 }

@@ -4,7 +4,14 @@ import { ClientGameState, Card, ActionType, GamePhase, GameSettings } from '@sha
 import { CONFIG } from '@shared/rules';
 import { ChampionId } from '@shared/championship';
 import { socketService, SocketEvents } from '../services/socket';
-import { CardHighlight, describeAction, actionHighlights } from '../utils/actionNotice';
+import { CardHighlight, describeAction, actionHighlights, concernsMe } from '../utils/actionNotice';
+
+// An opponent spied on or swapped with one of my cards: stays until I dismiss it
+export interface PersonalNotice {
+  id: number;
+  text: string;
+  highlights: CardHighlight[];
+}
 
 interface GameStore {
   // Connection
@@ -29,6 +36,7 @@ interface GameStore {
   snapNotification: string | null;
   actionNotice: string | null;          // what an opponent just did with Peek/Spy/Swap
   actionHighlights: CardHighlight[];    // the cards that action touched
+  personalNotices: PersonalNotice[];
   championshipOpen: boolean;
 
   // Actions
@@ -39,6 +47,7 @@ interface GameStore {
   joinChampionship: (champion: ChampionId) => Promise<void>;
   setChampionshipOpen: (open: boolean) => void;
   updateSettings: (changes: Partial<GameSettings>) => Promise<void>;
+  dismissPersonalNotice: (id: number) => void;
   startGame: () => Promise<void>;
   peekInitialCard: (index: number) => Promise<void>;
   doneMemorizing: () => Promise<void>;
@@ -91,6 +100,7 @@ export const useGameStore = create<GameStore>()(
   snapNotification: null,
   actionNotice: null,
   actionHighlights: [],
+  personalNotices: [],
   championshipOpen: false,
 
   setPlayerName: (name) => set({ playerName: name }),
@@ -141,12 +151,17 @@ export const useGameStore = create<GameStore>()(
       // Tell the others when someone used Peek, Spy or Swap (not after a reload)
       const action = state.lastAction;
       if (prev && action && action.id !== prev.lastAction?.id && action.actorId !== myId) {
-        set({ actionNotice: describeAction(action, myId), actionHighlights: actionHighlights(action) });
-        if (actionNoticeTimeoutId) clearTimeout(actionNoticeTimeoutId);
-        actionNoticeTimeoutId = setTimeout(
-          () => set({ actionNotice: null, actionHighlights: [] }),
-          ACTION_NOTICE_MS,
-        );
+        if (concernsMe(action, myId)) {
+          const notice = { id: action.id, text: describeAction(action, myId), highlights: actionHighlights(action) };
+          set({ personalNotices: [...get().personalNotices, notice] });
+        } else {
+          set({ actionNotice: describeAction(action, myId), actionHighlights: actionHighlights(action) });
+          if (actionNoticeTimeoutId) clearTimeout(actionNoticeTimeoutId);
+          actionNoticeTimeoutId = setTimeout(
+            () => set({ actionNotice: null, actionHighlights: [] }),
+            ACTION_NOTICE_MS,
+          );
+        }
       }
 
       // Sync action mode
@@ -156,7 +171,8 @@ export const useGameStore = create<GameStore>()(
 
       // Show score board on round end
       if (state.phase === 'ROUND_END' || state.phase === 'GAME_OVER') {
-        set({ showScoreBoard: true, drawnCard: null, actionMode: null, selectedCardIndex: null, swapSelection: [] });
+        // Card positions change in the next round, so old notices would point at the wrong cards
+        set({ showScoreBoard: true, drawnCard: null, actionMode: null, selectedCardIndex: null, swapSelection: [], personalNotices: [] });
       }
 
       // Trigger cabo alert
@@ -240,6 +256,9 @@ export const useGameStore = create<GameStore>()(
   },
 
   setChampionshipOpen: (open) => set({ championshipOpen: open }),
+
+  dismissPersonalNotice: (id) =>
+    set({ personalNotices: get().personalNotices.filter((n) => n.id !== id) }),
 
   updateSettings: async (changes) => {
     try {
@@ -454,3 +473,12 @@ export const useGameStore = create<GameStore>()(
     },
   ),
 );
+
+// Cards to mark on the table: from the short banner and from notices not yet dismissed
+export const mergeHighlights = (
+  actionHighlights: CardHighlight[],
+  personalNotices: PersonalNotice[],
+): CardHighlight[] =>
+  personalNotices.length === 0
+    ? actionHighlights
+    : [...actionHighlights, ...personalNotices.flatMap((n) => n.highlights)];

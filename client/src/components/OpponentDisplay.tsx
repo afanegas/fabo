@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { PlayerState } from '@shared/types';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, mergeHighlights } from '../store/gameStore';
+import { CardActionMarker } from './CardActionMarker';
 
 interface OpponentDisplayProps {
   player: PlayerState;
@@ -9,7 +10,10 @@ interface OpponentDisplayProps {
 }
 
 export const OpponentDisplay: React.FC<OpponentDisplayProps> = ({ player, onCardClick }) => {
-  const { gameState, playerId, actionMode, selectedCardIndex, actionHighlights } = useGameStore();
+  const { gameState, playerId, actionMode, selectedCardIndex, actionHighlights, personalNotices } = useGameStore();
+  const highlights = mergeHighlights(actionHighlights, personalNotices);
+  const highlightAt = (index: number) =>
+    highlights.find((h) => h.playerId === player.id && h.cardIndex === index);
   const isCurrentTurn = gameState?.currentTurnPlayerId === player.id;
   const isSelectableForAction = actionMode === 'SPY' || actionMode === 'SWAP';
 
@@ -49,13 +53,15 @@ export const OpponentDisplay: React.FC<OpponentDisplayProps> = ({ player, onCard
               w-7 h-10 md:w-10 md:h-14 rounded md:rounded-lg card-face-down border border-cabo-border
               ${isSelectableForAction ? 'cursor-pointer hover:border-cabo-accent/50' : ''}
               ${isCurrentTurn ? 'border-cabo-accent/30' : ''}
-              ${actionHighlights.some((h) => h.playerId === player.id && h.cardIndex === i) ? 'ring-2 ring-cabo-accent card-glow' : ''}
+              ${highlightAt(i) ? 'ring-2 ring-cabo-accent card-glow' : ''}
+              relative
             `}
           >
             <div className="w-full h-full flex flex-col items-center justify-center gap-[1px]">
               <span className="text-cabo-accent/30 text-[6px] md:text-[8px] font-bold leading-none">C</span>
               <span className="text-cabo-accent/30 text-[5px] md:text-[6px] font-display leading-none">{i + 1}</span>
             </div>
+            <CardActionMarker highlight={highlightAt(i)} small />
           </motion.div>
         ))}
       </div>

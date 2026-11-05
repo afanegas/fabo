@@ -120,42 +120,42 @@ export const ScoreBoard: React.FC = () => {
             </div>
           </div>
 
-          {/* Play style & luck of the finished game */}
-          {isGameOver && (
-            <div className="border-t border-cabo-border pt-4">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-cabo-textDim font-display">
-                    <th className="text-left font-semibold pb-1">Game stats</th>
-                    {sortedTotals.map(([pid]) => (
-                      <th key={pid} className={`text-right font-semibold pb-1 ${pid === playerId ? 'text-cabo-accent' : ''}`}>
-                        {gameState.players.find(p => p.id === pid)?.name}
-                      </th>
-                    ))}
+          {/* Play style & luck, added up over all rounds played so far */}
+          <div className="border-t border-cabo-border pt-4">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-cabo-textDim font-display">
+                  <th className="text-left font-semibold pb-1">
+                    {isGameOver ? 'Game stats' : `Stats after ${gameState.roundNumber} round${gameState.roundNumber > 1 ? 's' : ''}`}
+                  </th>
+                  {sortedTotals.map(([pid]) => (
+                    <th key={pid} className={`text-right font-semibold pb-1 ${pid === playerId ? 'text-cabo-accent' : ''}`}>
+                      {gameState.players.find(p => p.id === pid)?.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              {PLAY_STAT_GROUPS.map((group) => (
+                <tbody key={group.title}>
+                  <tr>
+                    <td colSpan={sortedTotals.length + 1} className="pt-2 pb-0.5 text-[10px] uppercase tracking-wider text-cabo-textDim">
+                      {group.title}
+                    </td>
                   </tr>
-                </thead>
-                {PLAY_STAT_GROUPS.map((group) => (
-                  <tbody key={group.title}>
-                    <tr>
-                      <td colSpan={sortedTotals.length + 1} className="pt-2 pb-0.5 text-[10px] uppercase tracking-wider text-cabo-textDim">
-                        {group.title}
-                      </td>
+                  {group.rows.map((row) => (
+                    <tr key={row.key} className="border-t border-cabo-border/40">
+                      <td className="py-1 text-cabo-textDim">{row.label}</td>
+                      {sortedTotals.map(([pid]) => (
+                        <td key={pid} className="py-1 text-right font-display font-semibold">
+                          {gameState.gameStats?.[pid]?.[row.key] ?? 0}
+                        </td>
+                      ))}
                     </tr>
-                    {group.rows.map((row) => (
-                      <tr key={row.key} className="border-t border-cabo-border/40">
-                        <td className="py-1 text-cabo-textDim">{row.label}</td>
-                        {sortedTotals.map(([pid]) => (
-                          <td key={pid} className="py-1 text-right font-display font-semibold">
-                            {gameState.gameStats?.[pid]?.[row.key] ?? 0}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                ))}
-              </table>
-            </div>
-          )}
+                  ))}
+                </tbody>
+              ))}
+            </table>
+          </div>
 
           {/* Action */}
           {!isGameOver && (

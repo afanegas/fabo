@@ -1,4 +1,4 @@
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, mergeHighlights } from '../store/gameStore';
 
 export const usePlayerHand = () => {
   const {
@@ -15,6 +15,7 @@ export const usePlayerHand = () => {
     peekInitialCard,
     useAction,
     actionHighlights,
+    personalNotices,
   } = useGameStore();
 
   const isMyTurn = gameState?.currentTurnPlayerId === playerId;
@@ -64,7 +65,7 @@ export const usePlayerHand = () => {
   return {
     gameState,
     playerId,
-    actionHighlights,
+    highlights: mergeHighlights(actionHighlights, personalNotices),
     drawnCard,
     selectedCardIndex,
     swapSelection,

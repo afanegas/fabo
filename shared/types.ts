@@ -49,6 +49,7 @@ export interface ClientGameState {
   players: PlayerState[];
   myCards: PlayerCardInfo[];
   discardTop: Card | null;
+  discardBlocked: boolean;       // the player on turn took the top card, the one below may not be used now
   deckCount: number;
   drawnCard: Card | null;        // only set when the player drew from deck
   drawnFromDiscard: boolean;     // true if drawn card came from discard pile
