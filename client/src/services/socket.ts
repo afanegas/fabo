@@ -11,7 +11,8 @@ class SocketService {
   private listeners: Map<string, Set<(...args: any[]) => void>> = new Map();
 
   connect(): Socket {
-    if (this.socket?.connected) return this.socket;
+    // Reuse the socket while it is connected, still connecting or reconnecting on its own
+    if (this.socket && (this.socket.connected || this.socket.active)) return this.socket;
 
     this.socket = io(SERVER_URL, {
       transports: ['websocket', 'polling'],

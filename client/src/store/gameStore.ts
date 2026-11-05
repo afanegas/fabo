@@ -21,6 +21,7 @@ interface GameStore {
   showScoreBoard: boolean;
   caboAlertActive: boolean;
   selectedCardIndex: number | null;
+  swapSelection: number[];          // own cards chosen to swap for the drawn card
   actionMode: ActionType | null;
   peekedCard: Card | null;
   showPeekedCard: boolean;
@@ -46,6 +47,7 @@ interface GameStore {
   snap: (cardIndex: number) => Promise<void>;
   nextRound: () => Promise<void>;
   setSelectedCardIndex: (index: number | null) => void;
+  toggleSwapSelection: (index: number) => void;
   setActionMode: (mode: ActionType | null) => void;
   clearPeekedCard: () => void;
   skipAction: () => Promise<void>;
@@ -56,6 +58,11 @@ interface GameStore {
 }
 
 let errorTimeoutId: NodeJS.Timeout | null = null;
+
+// socket.io reconnects on its own after a short drop (phone locked, app switched,
+// network change), but with a new socket id. Without telling the server, it keeps
+// the player marked as disconnected and skips their turns, so rejoin every time.
+let rejoinOnConnect: (() => void) | null = null;
 
 export const useGameStore = create<GameStore>()(
   persist(
@@ -71,6 +78,7 @@ export const useGameStore = create<GameStore>()(
   showScoreBoard: false,
   caboAlertActive: false,
   selectedCardIndex: null,
+  swapSelection: [],
   actionMode: null,
   peekedCard: null,
   showPeekedCard: false,
@@ -101,6 +109,13 @@ export const useGameStore = create<GameStore>()(
     socketService.connect();
     set({ isConnected: true });
 
+    if (!rejoinOnConnect) {
+      rejoinOnConnect = () => {
+        if (get().roomCode && get().playerId) get().reconnectSession();
+      };
+      socketService.on('connect', rejoinOnConnect);
+    }
+
     socketService.on(SocketEvents.STATE_UPDATE, (state: ClientGameState) => {
       const prev = get().gameState;
       const myId = get().playerId;
@@ -111,7 +126,7 @@ export const useGameStore = create<GameStore>()(
       if (!state.drawnCard && get().drawnCard) {
         // Only clear if it's no longer our turn or snap window is active
         if (state.currentTurnPlayerId !== myId || state.snapWindowActive) {
-          set({ drawnCard: null, selectedCardIndex: null });
+          set({ drawnCard: null, selectedCardIndex: null, swapSelection: [] });
         }
       }
 
@@ -122,7 +137,7 @@ export const useGameStore = create<GameStore>()(
 
       // Show score board on round end
       if (state.phase === 'ROUND_END' || state.phase === 'GAME_OVER') {
-        set({ showScoreBoard: true, drawnCard: null, actionMode: null, selectedCardIndex: null });
+        set({ showScoreBoard: true, drawnCard: null, actionMode: null, selectedCardIndex: null, swapSelection: [] });
       }
 
       // Trigger cabo alert
@@ -267,9 +282,9 @@ export const useGameStore = create<GameStore>()(
       const res: any = await socketService.emit(SocketEvents.KEEP_DRAWN_CARD, { swapIndices });
       if (res.penalized) {
         get().setError('Penalty! Cards didn\'t match — turn lost');
-        set({ drawnCard: null, selectedCardIndex: null });
+        set({ drawnCard: null, selectedCardIndex: null, swapSelection: [] });
       } else if (res.success) {
-        set({ drawnCard: null, selectedCardIndex: null });
+        set({ drawnCard: null, selectedCardIndex: null, swapSelection: [] });
       }
     } catch (err) {
       get().setError('Failed');
@@ -280,7 +295,7 @@ export const useGameStore = create<GameStore>()(
     try {
       const res: any = await socketService.emit(SocketEvents.DISCARD_DRAWN_CARD);
       if (res.success) {
-        set({ drawnCard: null });
+        set({ drawnCard: null, swapSelection: [] });
         if (res.actionType) {
           set({ actionMode: res.actionType });
         }
@@ -345,6 +360,10 @@ export const useGameStore = create<GameStore>()(
   },
 
   setSelectedCardIndex: (index) => set({ selectedCardIndex: index }),
+  toggleSwapSelection: (index) => {
+    const current = get().swapSelection;
+    set({ swapSelection: current.includes(index) ? current.filter((i) => i !== index) : [...current, index] });
+  },
   setActionMode: (mode) => set({ actionMode: mode }),
   clearPeekedCard: () => set({ peekedCard: null, showPeekedCard: false }),
 
@@ -369,7 +388,7 @@ export const useGameStore = create<GameStore>()(
   },
 
   clearSession: () => {
-    set({ playerId: null, roomCode: null, playerName: '', gameState: null, isConnected: false, drawnCard: null, actionMode: null, selectedCardIndex: null, showScoreBoard: false });
+    set({ playerId: null, roomCode: null, playerName: '', gameState: null, isConnected: false, drawnCard: null, actionMode: null, selectedCardIndex: null, swapSelection: [], showScoreBoard: false });
   },
 
   leaveGame: async () => {

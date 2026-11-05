@@ -288,7 +288,9 @@ export class GameRoom {
     if (!drawn) return { swapped: [], success: false, penalized: false };
     const player = this.getPlayer(playerId)!;
 
-    // Validate indices
+    // Validate indices: at least one, no card twice
+    if (swapIndices.length === 0 || new Set(swapIndices).size !== swapIndices.length)
+      return { swapped: [], success: false, penalized: false };
     for (const idx of swapIndices) {
       if (idx < 0 || idx >= player.cardCount)
         return { swapped: [], success: false, penalized: false };

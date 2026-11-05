@@ -7,6 +7,8 @@ export const usePlayerHand = () => {
     drawnCard,
     selectedCardIndex,
     setSelectedCardIndex,
+    swapSelection,
+    toggleSwapSelection,
     actionMode,
     keepDrawnCard,
     snap,
@@ -44,19 +46,17 @@ export const usePlayerHand = () => {
       return;
     }
 
+    // With a drawn card, tap one card to swap it, or several cards of the same value
+    // to swap them all for the drawn card
     if (hasDrawn && isMyTurn) {
-      if (selectedCardIndex === index) {
-        setSelectedCardIndex(null);
-      } else {
-        setSelectedCardIndex(index);
-      }
+      toggleSwapSelection(index);
       return;
     }
   };
 
   const handleSwapConfirm = () => {
-    if (selectedCardIndex !== null && drawnCard) {
-      keepDrawnCard([selectedCardIndex]);
+    if (swapSelection.length > 0 && drawnCard) {
+      keepDrawnCard(swapSelection);
     }
   };
 
@@ -64,6 +64,7 @@ export const usePlayerHand = () => {
     gameState,
     drawnCard,
     selectedCardIndex,
+    swapSelection,
     actionMode,
     isMemorize,
     snapActive,

@@ -194,7 +194,7 @@ export const GameScreen: React.FC = () => {
             animate={{ opacity: 1 }}
             className="text-cabo-accent font-display text-sm font-semibold"
           >
-            {drawnCard ? 'Select a card to swap, or Discard' :
+            {drawnCard ? 'Select a card to swap (or several of the same value), or Discard' :
               actionMode ? `Use your ${actionMode} action` :
               'Your turn — Draw or Call Cabo'}
           </motion.p>
