@@ -37,6 +37,7 @@ interface GameStore {
   actionNotice: string | null;          // what an opponent just did with Peek/Spy/Swap
   actionHighlights: CardHighlight[];    // the cards that action touched
   personalNotices: PersonalNotice[];
+  freshCardIds: string[];               // cards that just arrived in a hand, marked for a few seconds
   championshipOpen: boolean;
 
   // Actions
@@ -72,6 +73,19 @@ interface GameStore {
 
 let errorTimeoutId: NodeJS.Timeout | null = null;
 let actionNoticeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+const FRESH_CARD_MS = 5000;
+
+// Cards that are in a hand now but were not in that same hand before
+function newlyArrivedCards(prev: ClientGameState, next: ClientGameState, myId: string | null): string[] {
+  const handOf = (state: ClientGameState, playerId: string) =>
+    playerId === myId
+      ? state.myCards.map((c) => c.id)
+      : state.players.find((p) => p.id === playerId)?.cardIds ?? [];
+  return next.players.flatMap((p) => {
+    const before = new Set(handOf(prev, p.id));
+    return handOf(next, p.id).filter((id) => !before.has(id));
+  });
+}
 
 // socket.io reconnects on its own after a short drop (phone locked, app switched,
 // network change), but with a new socket id. Without telling the server, it keeps
@@ -100,6 +114,7 @@ export const useGameStore = create<GameStore>()(
   actionNotice: null,
   actionHighlights: [],
   personalNotices: [],
+  freshCardIds: [],
   championshipOpen: false,
 
   setPlayerName: (name) => set({ playerName: name }),
@@ -144,6 +159,22 @@ export const useGameStore = create<GameStore>()(
         // Only clear if it's no longer our turn or snap window is active
         if (state.currentTurnPlayerId !== myId || state.snapWindowActive) {
           set({ drawnCard: null, selectedCardIndex: null, swapSelection: [] });
+        }
+      }
+
+      // Mark cards that just landed in a hand, so everyone can follow where they went.
+      // Not for the deal at the start of a round, where every card is new.
+      const sameRound =
+        prev && prev.roundNumber === state.roundNumber &&
+        !['WAITING', 'ROUND_END', 'GAME_OVER'].includes(prev.phase);
+      if (sameRound) {
+        const arrived = newlyArrivedCards(prev, state, myId);
+        if (arrived.length > 0) {
+          set({ freshCardIds: [...get().freshCardIds, ...arrived] });
+          setTimeout(
+            () => set({ freshCardIds: get().freshCardIds.filter((id) => !arrived.includes(id)) }),
+            FRESH_CARD_MS,
+          );
         }
       }
 

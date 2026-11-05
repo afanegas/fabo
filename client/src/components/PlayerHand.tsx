@@ -1,8 +1,9 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { usePlayerHand } from '../hooks/usePlayerHand';
 import { CardActionMarker } from './CardActionMarker';
+import { FreshCardMarker } from './FreshCardMarker';
 
 interface PlayerHandProps {
   centerSlot?: React.ReactNode;
@@ -13,6 +14,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({ centerSlot }) => {
     gameState,
     playerId,
     highlights,
+    freshCardIds,
     drawnCard,
     selectedCardIndex,
     swapSelection,
@@ -34,25 +36,32 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({ centerSlot }) => {
     <div className="w-full">
       {/* All four cards in one row, on phones and desktop */}
       <div className="flex flex-row gap-2 md:gap-3 justify-center items-center">
-        {gameState.myCards.map((card, index) => (
-          <motion.div
-            key={card.id}
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1, type: 'spring', stiffness: 200 }}
-            className="relative"
-          >
-            <Card
-              card={card}
-              faceDown={!card.isRevealed}
-              onClick={() => handleCardClick(index)}
-              selected={selectedCardIndex === index || swapSelection.includes(index)}
-              glowing={snapActive || !!highlightAt(index)}
-              size="lg"
-            />
-            <CardActionMarker highlight={highlightAt(index)} />
-          </motion.div>
-        ))}
+        {/* New cards fly in from the drawn card above, leaving ones fly up to the discard pile,
+            and the rest slide slowly enough to follow with the eye */}
+        <AnimatePresence mode="popLayout" initial={false}>
+          {gameState.myCards.map((card, index) => (
+            <motion.div
+              key={card.id}
+              layout
+              initial={{ opacity: 0, y: -120, scale: 0.6 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -120, scale: 0.6, transition: { duration: 0.6 } }}
+              transition={{ type: 'spring', stiffness: 90, damping: 16, mass: 1 }}
+              className="relative"
+            >
+              <Card
+                card={card}
+                faceDown={!card.isRevealed}
+                onClick={() => handleCardClick(index)}
+                selected={selectedCardIndex === index || swapSelection.includes(index)}
+                glowing={snapActive || !!highlightAt(index)}
+                size="lg"
+              />
+              <CardActionMarker highlight={highlightAt(index)} />
+              {freshCardIds.includes(card.id) && <FreshCardMarker />}
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
       {/* Mobile: buttons & labels below the cards */}

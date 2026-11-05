@@ -28,6 +28,7 @@ export interface PlayerState {
   id: string;
   name: string;
   cardCount: number;
+  cardIds: string[];   // left to right; only ids, so others can follow where a card moves
   isConnected: boolean;
   isCaboCaller: boolean;
 }

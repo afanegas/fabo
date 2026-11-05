@@ -5,6 +5,7 @@ import { PlayerState } from '@shared/types';
 import { useGameStore, mergeHighlights } from '../store/gameStore';
 import { CardActionMarker } from './CardActionMarker';
 import { CardFace } from './CardFace';
+import { FreshCardMarker } from './FreshCardMarker';
 
 interface OpponentDisplayProps {
   player: PlayerState;
@@ -12,7 +13,7 @@ interface OpponentDisplayProps {
 }
 
 export const OpponentDisplay: React.FC<OpponentDisplayProps> = ({ player, onCardClick }) => {
-  const { gameState, playerId, actionMode, selectedCardIndex, actionHighlights, personalNotices } = useGameStore();
+  const { gameState, playerId, actionMode, selectedCardIndex, actionHighlights, personalNotices, freshCardIds } = useGameStore();
   const highlights = mergeHighlights(actionHighlights, personalNotices);
   const highlightAt = (index: number) =>
     highlights.find((h) => h.playerId === player.id && h.cardIndex === index);
@@ -20,6 +21,8 @@ export const OpponentDisplay: React.FC<OpponentDisplayProps> = ({ player, onCard
   const isSelectableForAction = actionMode === 'SPY' || actionMode === 'SWAP';
   // The card this opponent is holding on their turn: open from the discard pile, hidden from the deck
   const drawn = gameState?.opponentDrawn?.playerId === player.id ? gameState.opponentDrawn : null;
+  // Card ids let each card keep its identity, so moves and new cards can be animated
+  const cardIds = player.cardIds ?? Array.from({ length: player.cardCount }, (_, i) => `${player.id}-${i}`);
 
   return (
     <motion.div
@@ -48,27 +51,35 @@ export const OpponentDisplay: React.FC<OpponentDisplayProps> = ({ player, onCard
       <div className="flex items-center gap-2 md:gap-3">
         {/* Cards (face-down backs) */}
         <div className="flex gap-1 flex-wrap justify-center">
-          {Array.from({ length: player.cardCount }).map((_, i) => (
-            <motion.div
-              key={i}
-              whileHover={isSelectableForAction ? { scale: 1.1, y: -3 } : {}}
-              whileTap={isSelectableForAction ? { scale: 0.95 } : {}}
-              onClick={() => isSelectableForAction && onCardClick?.(i)}
-              className={`
-                w-7 h-10 md:w-10 md:h-14 rounded md:rounded-lg card-face-down border border-cabo-border
-                ${isSelectableForAction ? 'cursor-pointer hover:border-cabo-accent/50' : ''}
-                ${isCurrentTurn ? 'border-cabo-accent/30' : ''}
-                ${highlightAt(i) ? 'ring-2 ring-cabo-accent card-glow' : ''}
-                relative
-              `}
-            >
-              <div className="w-full h-full flex flex-col items-center justify-center gap-[1px]">
-                <span className="text-cabo-accent/30 text-[6px] md:text-[8px] font-bold leading-none">C</span>
-                <span className="text-cabo-accent/30 text-[5px] md:text-[6px] font-display leading-none">{i + 1}</span>
-              </div>
-              <CardActionMarker highlight={highlightAt(i)} small />
-            </motion.div>
-          ))}
+          <AnimatePresence mode="popLayout" initial={false}>
+            {cardIds.map((cardId, i) => (
+              <motion.div
+                key={cardId}
+                layout
+                initial={{ opacity: 0, y: 60, scale: 0.5 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 60, scale: 0.5, transition: { duration: 0.6 } }}
+                transition={{ type: 'spring', stiffness: 90, damping: 16 }}
+                whileHover={isSelectableForAction ? { scale: 1.1, y: -3 } : {}}
+                whileTap={isSelectableForAction ? { scale: 0.95 } : {}}
+                onClick={() => isSelectableForAction && onCardClick?.(i)}
+                className={`
+                  w-7 h-10 md:w-10 md:h-14 rounded md:rounded-lg card-face-down border border-cabo-border
+                  ${isSelectableForAction ? 'cursor-pointer hover:border-cabo-accent/50' : ''}
+                  ${isCurrentTurn ? 'border-cabo-accent/30' : ''}
+                  ${highlightAt(i) ? 'ring-2 ring-cabo-accent card-glow' : ''}
+                  relative
+                `}
+              >
+                <div className="w-full h-full flex flex-col items-center justify-center gap-[1px]">
+                  <span className="text-cabo-accent/30 text-[6px] md:text-[8px] font-bold leading-none">C</span>
+                  <span className="text-cabo-accent/30 text-[5px] md:text-[6px] font-display leading-none">{i + 1}</span>
+                </div>
+                <CardActionMarker highlight={highlightAt(i)} small />
+                {freshCardIds.includes(cardId) && <FreshCardMarker small />}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
 
         {/* Drawn card in their hand, like my own drawn card on my side of the table */}

@@ -16,6 +16,7 @@ export const usePlayerHand = () => {
     useAction,
     actionHighlights,
     personalNotices,
+    freshCardIds,
   } = useGameStore();
 
   const isMyTurn = gameState?.currentTurnPlayerId === playerId;
@@ -66,6 +67,7 @@ export const usePlayerHand = () => {
     gameState,
     playerId,
     highlights: mergeHighlights(actionHighlights, personalNotices),
+    freshCardIds,
     drawnCard,
     selectedCardIndex,
     swapSelection,

@@ -816,6 +816,7 @@ export class GameRoom {
       id: p.id,
       name: p.name,
       cardCount: p.cardCount,
+      cardIds: p.cards.map((c) => c.id),
       isConnected: p.isConnected,
       isCaboCaller: p.isCaboCaller,
     }));
