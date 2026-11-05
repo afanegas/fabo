@@ -4,7 +4,7 @@ import { Server, Socket } from "socket.io";
 import cors from "cors";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
-import { SocketEvents } from "../shared/types";
+import { SocketEvents, GameSettings } from "../shared/types";
 import { GameRoom } from "./game/GameRoom";
 import { CONFIG } from "../shared/rules";
 import {
@@ -205,6 +205,23 @@ io.on("connection", (socket: Socket) => {
     io.to(room.code).emit(SocketEvents.GAME_STARTED);
     broadcastState(room);
   });
+
+  // ─── Game Settings (waiting room) ───
+  socket.on(
+    SocketEvents.UPDATE_SETTINGS,
+    (data: Partial<GameSettings>, callback: any) => {
+      const { room, player } = getContext(socket);
+      if (!room || !player)
+        return callback?.({ success: false, error: "Not in a room" });
+      // In a championship both players may change them, otherwise only the host
+      if (room.mode !== "championship" && player.id !== room.hostId)
+        return callback?.({ success: false, error: "Only host can change settings" });
+      if (!room.updateSettings(data ?? {}))
+        return callback?.({ success: false, error: "The game has already started" });
+      callback?.({ success: true });
+      broadcastState(room);
+    },
+  );
 
   // ─── Peek Initial Card (Memorize Phase) ───
   socket.on(

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 
 export const useActionModal = () => {
@@ -16,6 +16,14 @@ export const useActionModal = () => {
   const [targetCardIndex, setTargetCardIndex] = useState<number | null>(null);
   const [lookSwapPhase, setLookSwapPhase] = useState<'look' | 'swap'>('look');
   const [lookTarget, setLookTarget] = useState<'self' | 'opponent' | null>(null);
+
+  // With only one opponent there is nothing to choose: pick them right away
+  const opponents = gameState?.players.filter((p) => p.id !== playerId) ?? [];
+  const onlyOpponentId = opponents.length === 1 ? opponents[0].id : null;
+  const needsOpponent = actionMode === 'SPY' || actionMode === 'SWAP';
+  useEffect(() => {
+    if (needsOpponent && onlyOpponentId && !targetPlayerId) setTargetPlayerId(onlyOpponentId);
+  }, [needsOpponent, onlyOpponentId, targetPlayerId]);
 
   const resetState = () => {
     setSelectedCardIndex(null);
@@ -95,10 +103,15 @@ export const useActionModal = () => {
       : '🔄 Queen — Now swap (or skip)',
   };
 
+  const opponentName = onlyOpponentId ? opponents[0].name : null;
   const descriptions: Record<string, string> = {
     PEEK: 'Select one of your cards to peek at',
-    SPY: 'Select an opponent, then choose one of their cards',
-    SWAP: 'Select one of your cards and one opponent\'s card to swap (blind)',
+    SPY: opponentName
+      ? `Choose one of ${opponentName}'s cards`
+      : 'Select an opponent, then choose one of their cards',
+    SWAP: opponentName
+      ? `Select one of your cards and one of ${opponentName}'s cards to swap (blind)`
+      : 'Select one of your cards and one opponent\'s card to swap (blind)',
     LOOK_AND_SWAP: lookSwapPhase === 'look'
       ? 'Choose a card to look at (yours or an opponent\'s)'
       : 'Now swap any of your cards with an opponent\'s card, or skip',
@@ -115,6 +128,7 @@ export const useActionModal = () => {
     setSelectedCardIndex,
     targetPlayerId,
     setTargetPlayerId,
+    onlyOpponentId,
     targetCardIndex,
     setTargetCardIndex,
     lookSwapPhase,

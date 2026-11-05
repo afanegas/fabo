@@ -9,6 +9,7 @@ export const useLobbyScreen = () => {
     startGame,
     leaveGame,
     initializeSocket,
+    updateSettings,
   } = useGameStore();
 
   const [copied, setCopied] = useState(false);
@@ -27,6 +28,8 @@ export const useLobbyScreen = () => {
 
   const isHost = gameState?.players[0]?.id === playerId;
   const isChampionship = gameState?.mode === 'championship';
+  // In a championship both players choose together, otherwise the host decides
+  const canEditSettings = isChampionship || isHost;
   const connectedCount = gameState?.players.filter((p) => p.isConnected).length ?? 0;
 
   return {
@@ -40,5 +43,7 @@ export const useLobbyScreen = () => {
     handleCopyCode,
     startGame,
     leaveGame,
+    canEditSettings,
+    updateSettings,
   };
 };

@@ -14,6 +14,7 @@ export const usePlayerHand = () => {
     snap,
     peekInitialCard,
     useAction,
+    actionHighlights,
   } = useGameStore();
 
   const isMyTurn = gameState?.currentTurnPlayerId === playerId;
@@ -62,6 +63,8 @@ export const usePlayerHand = () => {
 
   return {
     gameState,
+    playerId,
+    actionHighlights,
     drawnCard,
     selectedCardIndex,
     swapSelection,

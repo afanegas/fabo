@@ -9,7 +9,7 @@ interface OpponentDisplayProps {
 }
 
 export const OpponentDisplay: React.FC<OpponentDisplayProps> = ({ player, onCardClick }) => {
-  const { gameState, playerId, actionMode, selectedCardIndex } = useGameStore();
+  const { gameState, playerId, actionMode, selectedCardIndex, actionHighlights } = useGameStore();
   const isCurrentTurn = gameState?.currentTurnPlayerId === player.id;
   const isSelectableForAction = actionMode === 'SPY' || actionMode === 'SWAP';
 
@@ -49,6 +49,7 @@ export const OpponentDisplay: React.FC<OpponentDisplayProps> = ({ player, onCard
               w-7 h-10 md:w-10 md:h-14 rounded md:rounded-lg card-face-down border border-cabo-border
               ${isSelectableForAction ? 'cursor-pointer hover:border-cabo-accent/50' : ''}
               ${isCurrentTurn ? 'border-cabo-accent/30' : ''}
+              ${actionHighlights.some((h) => h.playerId === player.id && h.cardIndex === i) ? 'ring-2 ring-cabo-accent card-glow' : ''}
             `}
           >
             <div className="w-full h-full flex flex-col items-center justify-center gap-[1px]">

@@ -10,8 +10,10 @@ import {
   PlayerRoundStats,
   emptyPlayerRoundStats,
   addPlayerRoundStats,
+  GameSettings,
+  ActionNotice,
 } from "../../shared/types";
-import { CONFIG, BEST_RANK } from "../../shared/rules";
+import { CONFIG, BEST_RANK, DEFAULT_GAME_SETTINGS } from "../../shared/rules";
 import { Deck } from "./Deck";
 import { Player } from "./Player";
 import {
@@ -53,6 +55,9 @@ export class GameRoom {
   startedAt: string | null = null;
   roundStats: Map<string, PlayerRoundStats> = new Map(); // current round
   gameStats: Record<string, PlayerRoundStats> = {}; // finished rounds
+  settings: GameSettings = { ...DEFAULT_GAME_SETTINGS };
+  lastAction: ActionNotice | null = null;
+  private actionCounter = 0;
 
   constructor(code: string, mode: GameMode = "normal") {
     this.code = code;
@@ -190,6 +195,7 @@ export class GameRoom {
     this.lastDiscard = null;
     this.memorizeReady.clear();
     this.roundResults = null;
+    this.lastAction = null;
 
     for (const player of this.players) {
       player.resetForRound();
@@ -396,6 +402,7 @@ export class GameRoom {
         // so the card goes back to face-down after the peek overlay dismisses
         const card = player.cards[data.myCardIndex];
         this.stat(playerId).ownPeeks++;
+        this.noteAction({ type: "PEEK", actor: player, actorCardIndex: data.myCardIndex });
         this.pendingAction.delete(playerId);
         this.restorePhaseAfterAction();
         this.startSnapWindow();
@@ -413,6 +420,7 @@ export class GameRoom {
           return { success: false };
         const card = target.cards[data.targetCardIndex];
         this.stat(playerId).opponentPeeks++;
+        this.noteAction({ type: "SPY", actor: player, target, targetCardIndex: data.targetCardIndex });
         this.pendingAction.delete(playerId);
         this.restorePhaseAfterAction();
         this.startSnapWindow();
@@ -440,6 +448,13 @@ export class GameRoom {
         player.cards[data.myCardIndex] = theirCard;
         target.cards[data.targetCardIndex] = myCard;
         this.countOpponentSwap(playerId, theirCard);
+        this.noteAction({
+          type: "SWAP",
+          actor: player,
+          actorCardIndex: data.myCardIndex,
+          target,
+          targetCardIndex: data.targetCardIndex,
+        });
 
         // Clear peeked status for swapped positions
         player.peekedIndices.delete(data.myCardIndex);
@@ -562,7 +577,7 @@ export class GameRoom {
   }
 
   snap(playerId: string, cardIndex: number): { success: boolean; card?: Card; penaltyApplied?: boolean } {
-    if (!this.snapWindowActive) return { success: false };
+    if (!this.settings.snapEnabled || !this.snapWindowActive) return { success: false };
     if (!this.lastDiscard) return { success: false };
 
     const player = this.getPlayer(playerId);
@@ -625,7 +640,37 @@ export class GameRoom {
     this.onStateUpdate?.();
   }
 
+  updateSettings(changes: Partial<GameSettings>): boolean {
+    if (this.phase !== "WAITING") return false;
+    if (typeof changes.snapEnabled === "boolean") this.settings.snapEnabled = changes.snapEnabled;
+    return true;
+  }
+
+  private noteAction(a: {
+    type: ActionNotice["type"];
+    actor: Player;
+    actorCardIndex?: number;
+    target?: Player;
+    targetCardIndex?: number;
+  }): void {
+    this.lastAction = {
+      id: ++this.actionCounter,
+      type: a.type,
+      actorId: a.actor.id,
+      actorName: a.actor.name,
+      actorCardIndex: a.actorCardIndex,
+      targetPlayerId: a.target?.id,
+      targetPlayerName: a.target?.name,
+      targetCardIndex: a.targetCardIndex,
+    };
+  }
+
+  // Ends the turn after a discard: with Snap on, others get a few seconds to snap first
   private startSnapWindow(): void {
+    if (!this.settings.snapEnabled) {
+      this.advanceTurn();
+      return;
+    }
     this.snapWindowActive = true;
     this.clearSnapTimer();
     this.snapTimer = setTimeout(() => {
@@ -774,6 +819,8 @@ export class GameRoom {
       drawnFromDiscard: this.drawnFromDiscard.has(playerId),
       isMemorizeReady: this.memorizeReady.has(playerId),
       gameStats: this.gameStats,
+      settings: this.settings,
+      lastAction: this.lastAction,
     };
   }
 }

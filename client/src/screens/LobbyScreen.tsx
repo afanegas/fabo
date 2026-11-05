@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLobbyScreen } from '../hooks/useLobbyScreen';
 import { CHAMPIONS } from '@shared/championship';
 import { CHAMPION_COLORS } from '../constants/championship';
+import { GameSettingsPanel } from '../components/GameSettingsPanel';
 
 export const LobbyScreen: React.FC = () => {
   const {
@@ -16,7 +17,13 @@ export const LobbyScreen: React.FC = () => {
     handleCopyCode,
     startGame,
     leaveGame,
+    canEditSettings,
+    updateSettings,
   } = useLobbyScreen();
+
+  const settingsPanel = gameState && (
+    <GameSettingsPanel settings={gameState.settings} canEdit={canEditSettings} onChange={updateSettings} />
+  );
 
   if (!roomCode || !gameState || gameState.phase !== 'WAITING') return null;
 
@@ -47,6 +54,8 @@ export const LobbyScreen: React.FC = () => {
               );
             })}
           </div>
+
+          {settingsPanel}
 
           {opponentMissing ? (
             <p className="text-cabo-textDim text-sm animate-pulse">Waiting for your opponent...</p>
@@ -151,6 +160,8 @@ export const LobbyScreen: React.FC = () => {
             ))}
           </div>
         </div>
+
+        {settingsPanel}
 
         {isHost && gameState.players.length >= 2 && (
           <motion.button

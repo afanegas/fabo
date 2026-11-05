@@ -11,6 +11,7 @@ export const ActionModal: React.FC = () => {
     setSelectedCardIndex,
     targetPlayerId,
     setTargetPlayerId,
+    onlyOpponentId,
     targetCardIndex,
     setTargetCardIndex,
     lookSwapPhase,
@@ -76,24 +77,29 @@ export const ActionModal: React.FC = () => {
           {/* Target player selection for SPY and SWAP */}
           {(actionMode === 'SPY' || actionMode === 'SWAP') && (
             <div className="space-y-2">
-              <p className="text-xs font-display text-cabo-textDim">Select opponent:</p>
-              <div className="flex gap-2 flex-wrap">
-                {opponents.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => { setTargetPlayerId(p.id); setTargetCardIndex(null); }}
-                    className={`
-                      px-3 py-1.5 rounded-lg text-sm font-display transition-all
-                      ${targetPlayerId === p.id
-                        ? 'bg-cabo-accent text-cabo-dark font-semibold'
-                        : 'bg-cabo-surface border border-cabo-border text-cabo-text hover:border-cabo-accent/50'
-                      }
-                    `}
-                  >
-                    {p.name}
-                  </button>
-                ))}
-              </div>
+              {/* Only one opponent: chosen automatically, nothing to pick */}
+              {!onlyOpponentId && (
+                <>
+                  <p className="text-xs font-display text-cabo-textDim">Select opponent:</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {opponents.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => { setTargetPlayerId(p.id); setTargetCardIndex(null); }}
+                        className={`
+                          px-3 py-1.5 rounded-lg text-sm font-display transition-all
+                          ${targetPlayerId === p.id
+                            ? 'bg-cabo-accent text-cabo-dark font-semibold'
+                            : 'bg-cabo-surface border border-cabo-border text-cabo-text hover:border-cabo-accent/50'
+                          }
+                        `}
+                      >
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
 
               {/* Target card selection */}
               {targetPlayerId && (

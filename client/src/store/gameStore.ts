@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { ClientGameState, Card, ActionType, GamePhase } from '@shared/types';
+import { ClientGameState, Card, ActionType, GamePhase, GameSettings } from '@shared/types';
 import { CONFIG } from '@shared/rules';
 import { ChampionId } from '@shared/championship';
 import { socketService, SocketEvents } from '../services/socket';
+import { CardHighlight, describeAction, actionHighlights } from '../utils/actionNotice';
 
 interface GameStore {
   // Connection
@@ -26,6 +27,8 @@ interface GameStore {
   peekedCard: Card | null;
   showPeekedCard: boolean;
   snapNotification: string | null;
+  actionNotice: string | null;          // what an opponent just did with Peek/Spy/Swap
+  actionHighlights: CardHighlight[];    // the cards that action touched
   championshipOpen: boolean;
 
   // Actions
@@ -35,6 +38,7 @@ interface GameStore {
   joinRoom: (code: string) => Promise<void>;
   joinChampionship: (champion: ChampionId) => Promise<void>;
   setChampionshipOpen: (open: boolean) => void;
+  updateSettings: (changes: Partial<GameSettings>) => Promise<void>;
   startGame: () => Promise<void>;
   peekInitialCard: (index: number) => Promise<void>;
   doneMemorizing: () => Promise<void>;
@@ -58,6 +62,8 @@ interface GameStore {
 }
 
 let errorTimeoutId: NodeJS.Timeout | null = null;
+let actionNoticeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+const ACTION_NOTICE_MS = 5000;
 
 // socket.io reconnects on its own after a short drop (phone locked, app switched,
 // network change), but with a new socket id. Without telling the server, it keeps
@@ -83,6 +89,8 @@ export const useGameStore = create<GameStore>()(
   peekedCard: null,
   showPeekedCard: false,
   snapNotification: null,
+  actionNotice: null,
+  actionHighlights: [],
   championshipOpen: false,
 
   setPlayerName: (name) => set({ playerName: name }),
@@ -128,6 +136,17 @@ export const useGameStore = create<GameStore>()(
         if (state.currentTurnPlayerId !== myId || state.snapWindowActive) {
           set({ drawnCard: null, selectedCardIndex: null, swapSelection: [] });
         }
+      }
+
+      // Tell the others when someone used Peek, Spy or Swap (not after a reload)
+      const action = state.lastAction;
+      if (prev && action && action.id !== prev.lastAction?.id && action.actorId !== myId) {
+        set({ actionNotice: describeAction(action, myId), actionHighlights: actionHighlights(action) });
+        if (actionNoticeTimeoutId) clearTimeout(actionNoticeTimeoutId);
+        actionNoticeTimeoutId = setTimeout(
+          () => set({ actionNotice: null, actionHighlights: [] }),
+          ACTION_NOTICE_MS,
+        );
       }
 
       // Sync action mode
@@ -221,6 +240,15 @@ export const useGameStore = create<GameStore>()(
   },
 
   setChampionshipOpen: (open) => set({ championshipOpen: open }),
+
+  updateSettings: async (changes) => {
+    try {
+      const res: any = await socketService.emit(SocketEvents.UPDATE_SETTINGS, changes);
+      if (!res.success) get().setError(res.error || 'Cannot change settings');
+    } catch (err) {
+      get().setError('Failed to change settings');
+    }
+  },
 
   startGame: async () => {
     try {

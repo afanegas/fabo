@@ -63,6 +63,25 @@ export interface ClientGameState {
   memorizeCardsLeft: number;
   isMemorizeReady: boolean;
   gameStats: Record<string, PlayerRoundStats>; // playerId -> totals of finished rounds
+  settings: GameSettings;
+  lastAction: ActionNotice | null; // last Peek/Spy/Swap, shown to everyone else
+}
+
+// ─── Game Settings (chosen in the waiting room) ───
+export interface GameSettings {
+  snapEnabled: boolean;
+}
+
+// ─── Card power used by a player, so the others know what happened ───
+export interface ActionNotice {
+  id: number;                // increases with every action, to tell new from old
+  type: 'PEEK' | 'SPY' | 'SWAP';
+  actorId: string;
+  actorName: string;
+  actorCardIndex?: number;   // PEEK: the card looked at, SWAP: the actor's card
+  targetPlayerId?: string;   // SPY / SWAP
+  targetPlayerName?: string;
+  targetCardIndex?: number;
 }
 
 // ─── Play Style & Luck (counted per player and round) ───
@@ -142,6 +161,7 @@ export enum SocketEvents {
   RECONNECT = 'reconnect_session',
   LEAVE_GAME = 'leave_game',
   JOIN_CHAMPIONSHIP = 'join_championship',
+  UPDATE_SETTINGS = 'update_settings',
 
   // Server → Client
   ROOM_CREATED = 'room_created',

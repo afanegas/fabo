@@ -15,6 +15,7 @@ export const GameScreen: React.FC = () => {
     caboAlertActive,
     error,
     snapNotification,
+    actionNotice,
     leaveGame,
   } = useGameStore();
 
@@ -115,6 +116,20 @@ export const GameScreen: React.FC = () => {
             className="absolute top-14 left-1/2 -translate-x-1/2 z-40 bg-cabo-green/90 text-white px-4 py-2 rounded-xl text-sm font-display shadow-lg"
           >
             ⚡ {snapNotification}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* An opponent used Peek, Spy or Swap */}
+      <AnimatePresence>
+        {actionNotice && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute top-14 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-sm text-center bg-cabo-accent/95 text-cabo-dark px-4 py-2 rounded-xl text-sm font-display font-semibold shadow-lg"
+          >
+            {actionNotice}
           </motion.div>
         )}
       </AnimatePresence>

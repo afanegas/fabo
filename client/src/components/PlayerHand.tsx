@@ -10,6 +10,8 @@ interface PlayerHandProps {
 export const PlayerHand: React.FC<PlayerHandProps> = ({ centerSlot }) => {
   const {
     gameState,
+    playerId,
+    actionHighlights,
     drawnCard,
     selectedCardIndex,
     swapSelection,
@@ -22,6 +24,8 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({ centerSlot }) => {
 
   if (!gameState) return null;
 
+  const isHighlighted = (index: number) =>
+    actionHighlights.some((h) => h.playerId === playerId && h.cardIndex === index);
   const showSwapButton = swapSelection.length > 0 && drawnCard && !actionMode;
   const swapLabel = swapSelection.length === 1 ? 'Swap selected card' : `Swap ${swapSelection.length} cards for 1`;
 
@@ -41,7 +45,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({ centerSlot }) => {
               faceDown={!card.isRevealed}
               onClick={() => handleCardClick(index)}
               selected={selectedCardIndex === index || swapSelection.includes(index)}
-              glowing={snapActive}
+              glowing={snapActive || isHighlighted(index)}
               size="lg"
             />
           </motion.div>

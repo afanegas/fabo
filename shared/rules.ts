@@ -28,6 +28,11 @@ export const CARD_TITLES: Record<Rank, string> = {
 // The best card (0 points), counted in the play-style stats
 export const BEST_RANK: Rank = '0';
 
+// Defaults for the settings in the waiting room
+export const DEFAULT_GAME_SETTINGS = {
+  snapEnabled: false,
+};
+
 // ─── Game Configuration & Rules ───
 export const CONFIG = {
   MIN_PLAYERS: 2,
