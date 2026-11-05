@@ -4,6 +4,9 @@ import { Hand } from 'lucide-react';
 import { Card } from './Card';
 import { useDrawAndDiscard } from '../hooks/useDrawAndDiscard';
 import { CardFace } from './CardFace';
+import { CARD_ACTIONS } from '../constants/cards';
+
+const ACTION_BUTTON_LABELS = { PEEK: 'Use Peek', SPY: 'Use Spy', SWAP: 'Use Swap', LOOK_AND_SWAP: 'Use' } as const;
 
 export const DrawAndDiscard: React.FC = () => {
   const {
@@ -20,6 +23,8 @@ export const DrawAndDiscard: React.FC = () => {
 
   // After taking the top card of the discard pile, the card below stays there but may not be used
   const discardBlocked = gameState.discardBlocked && !!gameState.discardTop;
+  // A power card is used by putting it on the discard pile, so the button says so
+  const drawnAction = drawnCard ? CARD_ACTIONS[drawnCard.rank] : null;
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -112,9 +117,9 @@ export const DrawAndDiscard: React.FC = () => {
               {canDiscard ? (
                 <button
                   onClick={discardDrawnCard}
-                  className="btn-secondary text-xs px-3 py-1.5"
+                  className={`${drawnAction ? 'btn-primary' : 'btn-secondary'} text-xs px-3 py-1.5`}
                 >
-                  Discard
+                  {drawnAction ? ACTION_BUTTON_LABELS[drawnAction] : 'Discard'}
                 </button>
               ) : (
                 <span className="text-cabo-textDim text-[10px] font-display">Must swap</span>

@@ -12,6 +12,7 @@ import {
   addPlayerRoundStats,
   GameSettings,
   ActionNotice,
+  OpponentDrawnCard,
 } from "../../shared/types";
 import { CONFIG, BEST_RANK, DEFAULT_GAME_SETTINGS } from "../../shared/rules";
 import { Deck } from "./Deck";
@@ -267,6 +268,7 @@ export class GameRoom {
 
     this.drawnCard.set(playerId, card);
     if (card.rank === BEST_RANK) this.stat(playerId).unicornsDrawn++;
+    this.noteAction({ type: "DRAW", actor: this.getPlayer(playerId)!, fromDiscard: false });
     return card;
   }
 
@@ -281,6 +283,12 @@ export class GameRoom {
     this.drawnCard.set(playerId, card);
     this.drawnFromDiscard.add(playerId);
     this.stat(playerId).discardDraws++;
+    this.noteAction({
+      type: "DRAW",
+      actor: this.getPlayer(playerId)!,
+      fromDiscard: true,
+      cardRank: card.rank,
+    });
     return card;
   }
 
@@ -305,6 +313,7 @@ export class GameRoom {
     if (swapIndices.length === 1) {
       // Simple swap
       const oldCard = player.swapCard(swapIndices[0], drawn);
+      this.noteAction({ type: "PLACE", actor: player, actorCardIndex: swapIndices[0], cardCount: 1 });
       this.drawnCard.delete(playerId);
       this.drawnFromDiscard.delete(playerId);
       this.discardPile.push(oldCard);
@@ -326,6 +335,7 @@ export class GameRoom {
         this.drawnCard.delete(playerId);
         this.drawnFromDiscard.delete(playerId);
         this.lastDiscard = drawn;
+        this.noteAction({ type: "MISMATCH", actor: player, cardCount: swapIndices.length });
         this.advanceTurn();
         return { swapped: [], success: false, penalized: true };
       }
@@ -333,6 +343,13 @@ export class GameRoom {
       // Remove cards (descending order to keep indices valid) and add drawn card
       const removed = player.removeMultipleCards(swapIndices);
       player.addCard(drawn);
+      // The drawn card goes to the end of the row
+      this.noteAction({
+        type: "PLACE",
+        actor: player,
+        actorCardIndex: player.cardCount - 1,
+        cardCount: swapIndices.length,
+      });
       this.drawnCard.delete(playerId);
       this.drawnFromDiscard.delete(playerId);
 
@@ -361,6 +378,7 @@ export class GameRoom {
     this.discardPile.push(drawn);
     this.drawnCard.delete(playerId);
     this.lastDiscard = drawn;
+    this.noteAction({ type: "DISCARD", actor: this.getPlayer(playerId)!, cardRank: drawn.rank });
 
     // Check for action card
     const actionType = getActionType(drawn.rank);
@@ -652,6 +670,9 @@ export class GameRoom {
     actorCardIndex?: number;
     target?: Player;
     targetCardIndex?: number;
+    fromDiscard?: boolean;
+    cardRank?: Card["rank"];
+    cardCount?: number;
   }): void {
     this.lastAction = {
       id: ++this.actionCounter,
@@ -662,7 +683,19 @@ export class GameRoom {
       targetPlayerId: a.target?.id,
       targetPlayerName: a.target?.name,
       targetCardIndex: a.targetCardIndex,
+      fromDiscard: a.fromDiscard,
+      cardRank: a.cardRank,
+      cardCount: a.cardCount,
     };
+  }
+
+  // What the others see of the card the player on turn is holding
+  private opponentDrawnCard(): OpponentDrawnCard | null {
+    const holder = this.currentPlayer;
+    const card = holder && this.drawnCard.get(holder.id);
+    if (!holder || !card) return null;
+    const fromDiscard = this.drawnFromDiscard.has(holder.id);
+    return { playerId: holder.id, fromDiscard, card: fromDiscard ? card : null };
   }
 
   // Ends the turn after a discard: with Snap on, others get a few seconds to snap first
@@ -823,6 +856,7 @@ export class GameRoom {
       lastAction: this.lastAction,
       discardBlocked:
         !!this.currentPlayer && this.drawnFromDiscard.has(this.currentPlayer.id),
+      opponentDrawn: this.opponentDrawnCard(),
     };
   }
 }

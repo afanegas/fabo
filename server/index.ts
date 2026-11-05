@@ -259,6 +259,8 @@ io.on("connection", (socket: Socket) => {
     if (!card) return callback?.({ success: false, error: "Cannot draw" });
 
     callback?.({ success: true, card });
+    // The others see that a hidden card was drawn
+    broadcastState(room);
   });
 
   // ─── Draw from Discard ───

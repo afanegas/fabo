@@ -9,6 +9,7 @@ import { ActionModal } from '../components/ActionModal';
 import { ScoreBoard } from '../components/ScoreBoard';
 import { PeekOverlay } from '../components/PeekOverlay';
 import { LogOut } from 'lucide-react';
+import { CARD_ACTIONS } from '../constants/cards';
 
 export const GameScreen: React.FC = () => {
   const {
@@ -235,7 +236,9 @@ export const GameScreen: React.FC = () => {
           >
             {drawnCard ? (gameState.drawnFromDiscard
                 ? 'Select a card to swap (or several of the same value)'
-                : 'Select a card to swap (or several of the same value), or Discard') :
+                : drawnCard && CARD_ACTIONS[drawnCard.rank]
+                  ? `Select a card to swap (or several of the same value), or use the ${CARD_ACTIONS[drawnCard.rank]?.toLowerCase()} power`
+                  : 'Select a card to swap (or several of the same value), or Discard') :
               actionMode ? `Use your ${actionMode} action` :
               'Your turn — Draw or Call Cabo'}
           </motion.p>

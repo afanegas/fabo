@@ -65,7 +65,15 @@ export interface ClientGameState {
   isMemorizeReady: boolean;
   gameStats: Record<string, PlayerRoundStats>; // playerId -> totals of finished rounds
   settings: GameSettings;
-  lastAction: ActionNotice | null; // last Peek/Spy/Swap, shown to everyone else
+  lastAction: ActionNotice | null; // last move with a card, shown to everyone else
+  opponentDrawn: OpponentDrawnCard | null; // card the player on turn is holding, as the others see it
+}
+
+// The card the player on turn has drawn: open if it came from the discard pile, hidden from the deck
+export interface OpponentDrawnCard {
+  playerId: string;
+  fromDiscard: boolean;
+  card: Card | null;
 }
 
 // ─── Game Settings (chosen in the waiting room) ───
@@ -73,16 +81,24 @@ export interface GameSettings {
   snapEnabled: boolean;
 }
 
-// ─── Card power used by a player, so the others know what happened ───
+// ─── A move with a card, so the others know what happened ───
+// PEEK / SPY / SWAP: card powers. DRAW: took a card from the deck or the discard pile.
+// PLACE: put the drawn card into their hand. DISCARD: threw the drawn card away.
+// MISMATCH: tried to swap several cards that were not the same.
+export type ActionNoticeType = 'PEEK' | 'SPY' | 'SWAP' | 'DRAW' | 'PLACE' | 'DISCARD' | 'MISMATCH';
+
 export interface ActionNotice {
   id: number;                // increases with every action, to tell new from old
-  type: 'PEEK' | 'SPY' | 'SWAP';
+  type: ActionNoticeType;
   actorId: string;
   actorName: string;
-  actorCardIndex?: number;   // PEEK: the card looked at, SWAP: the actor's card
+  actorCardIndex?: number;   // PEEK: the card looked at, SWAP / PLACE: the actor's card
   targetPlayerId?: string;   // SPY / SWAP
   targetPlayerName?: string;
   targetCardIndex?: number;
+  fromDiscard?: boolean;     // DRAW
+  cardRank?: Rank;           // DRAW from the discard pile, DISCARD: the card everyone can see
+  cardCount?: number;        // PLACE / MISMATCH: how many of their cards were swapped
 }
 
 // ─── Play Style & Luck (counted per player and round) ───

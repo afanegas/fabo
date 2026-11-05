@@ -4,7 +4,7 @@ import { ClientGameState, Card, ActionType, GamePhase, GameSettings } from '@sha
 import { CONFIG } from '@shared/rules';
 import { ChampionId } from '@shared/championship';
 import { socketService, SocketEvents } from '../services/socket';
-import { CardHighlight, describeAction, actionHighlights, concernsMe } from '../utils/actionNotice';
+import { CardHighlight, describeAction, actionHighlights, concernsMe, noticeDuration } from '../utils/actionNotice';
 
 // An opponent spied on or swapped with one of my cards: stays until I dismiss it
 export interface PersonalNotice {
@@ -72,7 +72,6 @@ interface GameStore {
 
 let errorTimeoutId: NodeJS.Timeout | null = null;
 let actionNoticeTimeoutId: ReturnType<typeof setTimeout> | null = null;
-const ACTION_NOTICE_MS = 5000;
 
 // socket.io reconnects on its own after a short drop (phone locked, app switched,
 // network change), but with a new socket id. Without telling the server, it keeps
@@ -148,7 +147,7 @@ export const useGameStore = create<GameStore>()(
         }
       }
 
-      // Tell the others when someone used Peek, Spy or Swap (not after a reload)
+      // Tell the others what the player on turn did with a card (not after a reload)
       const action = state.lastAction;
       if (prev && action && action.id !== prev.lastAction?.id && action.actorId !== myId) {
         if (concernsMe(action, myId)) {
@@ -159,7 +158,7 @@ export const useGameStore = create<GameStore>()(
           if (actionNoticeTimeoutId) clearTimeout(actionNoticeTimeoutId);
           actionNoticeTimeoutId = setTimeout(
             () => set({ actionNotice: null, actionHighlights: [] }),
-            ACTION_NOTICE_MS,
+            noticeDuration(action),
           );
         }
       }
