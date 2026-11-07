@@ -4,7 +4,7 @@ import { ClientGameState, Card, ActionType, GamePhase, GameSettings } from '@sha
 import { CONFIG } from '@shared/rules';
 import { ChampionId } from '@shared/championship';
 import { socketService, SocketEvents } from '../services/socket';
-import { CardHighlight, describeAction, actionHighlights, concernsMe, noticeDuration } from '../utils/actionNotice';
+import { CardHighlight, describeAction, actionHighlights, concernsMe, noticeDuration, readingTime } from '../utils/actionNotice';
 
 // An opponent spied on or swapped with one of my cards: stays until I dismiss it
 export interface PersonalNotice {
@@ -123,7 +123,7 @@ export const useGameStore = create<GameStore>()(
   setError: (error) => {
     set({ error });
     
-    // Clear any existing timeout to reset the 4-second clock
+    // Clear any existing timeout so a new error gets its full reading time
     if (errorTimeoutId) {
       clearTimeout(errorTimeoutId);
       errorTimeoutId = null;
@@ -134,7 +134,7 @@ export const useGameStore = create<GameStore>()(
       errorTimeoutId = setTimeout(() => {
         set({ error: null });
         errorTimeoutId = null;
-      }, 4000);
+      }, readingTime(error, 5000));
     }
   },
 
@@ -186,11 +186,12 @@ export const useGameStore = create<GameStore>()(
           const notice = { id: action.id, text: describeAction(action, myId), highlights: actionHighlights(action) };
           set({ personalNotices: [...get().personalNotices, notice] });
         } else {
-          set({ actionNotice: describeAction(action, myId), actionHighlights: actionHighlights(action) });
+          const text = describeAction(action, myId);
+          set({ actionNotice: text, actionHighlights: actionHighlights(action) });
           if (actionNoticeTimeoutId) clearTimeout(actionNoticeTimeoutId);
           actionNoticeTimeoutId = setTimeout(
             () => set({ actionNotice: null, actionHighlights: [] }),
-            noticeDuration(action),
+            noticeDuration(action, text),
           );
         }
       }
@@ -222,7 +223,7 @@ export const useGameStore = create<GameStore>()(
 
     socketService.on(SocketEvents.SNAP_RESULT, (data: { playerName: string; card: Card }) => {
       set({ snapNotification: `${data.playerName} snapped a ${data.card.rank}!` });
-      setTimeout(() => set({ snapNotification: null }), 2000);
+      setTimeout(() => set({ snapNotification: null }), 4000);
     });
 
     socketService.on(SocketEvents.SNAP_WINDOW_CLOSED, () => {

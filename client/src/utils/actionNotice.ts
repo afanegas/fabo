@@ -17,9 +17,12 @@ export const ACTION_ICONS: Record<ActionNotice['type'], string> = {
   RETURN: '↩',
 };
 
-// Card powers stay a little longer; drawing, placing and discarding just flash by
-export const noticeDuration = (a: ActionNotice) =>
-  a.type === 'PEEK' || a.type === 'SPY' || a.type === 'SWAP' ? 5000 : 2000;
+// Long enough to read: grows with the length of the text, card powers stay a bit longer
+export const readingTime = (text: string, minMs: number) =>
+  Math.min(9000, Math.max(minMs, 1500 + text.length * 60));
+
+export const noticeDuration = (a: ActionNotice, text: string) =>
+  readingTime(text, a.type === 'PEEK' || a.type === 'SPY' || a.type === 'SWAP' ? 6000 : 4000);
 
 // Spied on or swapped with one of my cards
 export const concernsMe = (a: ActionNotice, myId: string | null) => a.targetPlayerId === myId;
