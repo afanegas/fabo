@@ -1,4 +1,7 @@
 import { ActionNotice } from '@shared/types';
+import { CARD_ACTIONS } from '@shared/rules';
+
+const POWER_NAMES = { PEEK: 'Peek', SPY: 'Spy', SWAP: 'Swap', LOOK_AND_SWAP: 'Look & Swap' } as const;
 
 export interface CardHighlight {
   playerId: string;
@@ -15,6 +18,7 @@ export const ACTION_ICONS: Record<ActionNotice['type'], string> = {
   DISCARD: '🗑',
   MISMATCH: '❌',
   RETURN: '↩',
+  USE: '✨',
 };
 
 // Long enough to read: grows with the length of the text, card powers stay a bit longer
@@ -50,7 +54,11 @@ export function describeAction(a: ActionNotice, myId: string | null): string {
         ? `${icon} ${a.actorName} swapped ${a.cardCount} matching cards for it — it is now their ${cardNo(a.actorCardIndex)}`
         : `${icon} ${a.actorName} put it in place of their ${cardNo(a.actorCardIndex)}`;
     case 'DISCARD':
-      return `${icon} ${a.actorName} discarded the ${a.cardRank}`;
+      return a.powerUnused
+        ? `${icon} ${a.actorName} discarded the ${a.cardRank} without using its power`
+        : `${icon} ${a.actorName} discarded the ${a.cardRank}`;
+    case 'USE':
+      return `${icon} ${a.actorName} is using the ${a.cardRank} — ${POWER_NAMES[CARD_ACTIONS[a.cardRank!] ?? 'PEEK']}`;
     case 'RETURN':
       return `${icon} ${a.actorName} put the ${a.cardRank} back on the discard pile`;
     case 'MISMATCH':

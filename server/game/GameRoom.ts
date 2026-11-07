@@ -377,7 +377,8 @@ export class GameRoom {
     }
   }
 
-  discardDrawnCard(playerId: string): {
+  // A power card can be used for its power, or just thrown away like any other card
+  discardDrawnCard(playerId: string, usePower = true): {
     card: Card | null;
     actionType: ActionType | null;
   } {
@@ -392,17 +393,23 @@ export class GameRoom {
     this.discardPile.push(drawn);
     this.drawnCard.delete(playerId);
     this.lastDiscard = drawn;
-    this.noteAction({ type: "DISCARD", actor: this.getPlayer(playerId)!, cardRank: drawn.rank });
+    const actor = this.getPlayer(playerId)!;
 
-    // Check for action card
-    const actionType = getActionType(drawn.rank);
+    const actionType = usePower ? getActionType(drawn.rank) : null;
     if (actionType) {
+      this.noteAction({ type: "USE", actor, cardRank: drawn.rank });
       this.pendingAction.set(playerId, actionType);
       this.phase =
         this.phase === "CABO_CALLED" ? "CABO_CALLED" : "ACTION_PENDING";
       return { card: drawn, actionType };
     }
 
+    this.noteAction({
+      type: "DISCARD",
+      actor,
+      cardRank: drawn.rank,
+      powerUnused: !!getActionType(drawn.rank),
+    });
     this.turnActionTaken = true;
     this.startSnapWindow();
     return { card: drawn, actionType: null };
@@ -586,6 +593,13 @@ export class GameRoom {
   skipAction(playerId: string): boolean {
     if (!this.pendingAction.has(playerId)) return false;
     this.pendingAction.delete(playerId);
+    // Changed their mind in the power dialog: for the others it ends up as a plain discard
+    this.noteAction({
+      type: "DISCARD",
+      actor: this.getPlayer(playerId)!,
+      cardRank: this.lastDiscard?.rank,
+      powerUnused: true,
+    });
     this.restorePhaseAfterAction();
     this.startSnapWindow();
     return true;
@@ -687,6 +701,7 @@ export class GameRoom {
     fromDiscard?: boolean;
     cardRank?: Card["rank"];
     cardCount?: number;
+    powerUnused?: boolean;
   }): void {
     this.lastAction = {
       id: ++this.actionCounter,
@@ -700,6 +715,7 @@ export class GameRoom {
       fromDiscard: a.fromDiscard,
       cardRank: a.cardRank,
       cardCount: a.cardCount,
+      powerUnused: a.powerUnused,
     };
   }
 

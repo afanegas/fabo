@@ -301,11 +301,11 @@ io.on("connection", (socket: Socket) => {
   );
 
   // ─── Discard Drawn Card ───
-  socket.on(SocketEvents.DISCARD_DRAWN_CARD, (_: any, callback: any) => {
+  socket.on(SocketEvents.DISCARD_DRAWN_CARD, (data: { usePower?: boolean } | undefined, callback: any) => {
     const { room, player } = getContext(socket);
     if (!room || !player) return callback?.({ success: false });
 
-    const result = room.discardDrawnCard(player.id);
+    const result = room.discardDrawnCard(player.id, data?.usePower !== false);
     callback?.({ success: !!result.card, actionType: result.actionType });
     if (result.actionType) {
       socket.emit(SocketEvents.ACTION_REQUIRED, {

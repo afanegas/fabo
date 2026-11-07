@@ -187,7 +187,7 @@ export const GameScreen: React.FC = () => {
             {drawnCard ? (gameState.drawnFromDiscard
                 ? 'Select a card to swap (or several of the same value), or put it back'
                 : drawnCard && CARD_ACTIONS[drawnCard.rank]
-                  ? `Select a card to swap (or several of the same value), or use the ${CARD_ACTIONS[drawnCard.rank]?.toLowerCase()} power`
+                  ? `Select a card to swap (or several of the same value), use the ${CARD_ACTIONS[drawnCard.rank]?.toLowerCase()} power, or Discard`
                   : 'Select a card to swap (or several of the same value), or Discard') :
               actionMode ? `Use your ${actionMode} action` :
               'Your turn — Draw or Call Cabo'}

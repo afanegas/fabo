@@ -116,12 +116,23 @@ export const DrawAndDiscard: React.FC = () => {
                 </span>
               </span>
               {canDiscard ? (
-                <button
-                  onClick={discardDrawnCard}
-                  className={`${drawnAction ? 'btn-primary' : 'btn-secondary'} text-xs px-3 py-1.5`}
-                >
-                  {drawnAction ? ACTION_BUTTON_LABELS[drawnAction] : 'Discard'}
-                </button>
+                <div className="flex gap-1.5">
+                  {/* A power card can be used, or just thrown away like any other card */}
+                  {drawnAction && (
+                    <button
+                      onClick={() => discardDrawnCard(true)}
+                      className="btn-primary text-xs px-3 py-1.5"
+                    >
+                      {ACTION_BUTTON_LABELS[drawnAction]}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => discardDrawnCard(false)}
+                    className="btn-secondary text-xs px-3 py-1.5"
+                  >
+                    Discard
+                  </button>
+                </div>
               ) : (
                 <>
                   <span className="text-cabo-textDim text-[10px] font-display">Swap it, or</span>

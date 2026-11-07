@@ -56,7 +56,7 @@ interface GameStore {
   drawFromDiscard: () => Promise<void>;
   returnToDiscard: () => Promise<void>;
   keepDrawnCard: (swapIndices: number[]) => Promise<void>;
-  discardDrawnCard: () => Promise<void>;
+  discardDrawnCard: (usePower?: boolean) => Promise<void>;
   useAction: (data: { targetPlayerId?: string; myCardIndex?: number; targetCardIndex?: number }, keepActionOpen?: boolean) => Promise<void>;
   callCabo: () => Promise<void>;
   snap: (cardIndex: number) => Promise<void>;
@@ -380,9 +380,10 @@ export const useGameStore = create<GameStore>()(
     }
   },
 
-  discardDrawnCard: async () => {
+  // usePower false: throw a power card away without using its power
+  discardDrawnCard: async (usePower = true) => {
     try {
-      const res: any = await socketService.emit(SocketEvents.DISCARD_DRAWN_CARD);
+      const res: any = await socketService.emit(SocketEvents.DISCARD_DRAWN_CARD, { usePower });
       if (res.success) {
         set({ drawnCard: null, swapSelection: [] });
         if (res.actionType) {

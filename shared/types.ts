@@ -86,8 +86,8 @@ export interface GameSettings {
 // PEEK / SPY / SWAP: card powers. DRAW: took a card from the deck or the discard pile.
 // PLACE: put the drawn card into their hand. DISCARD: threw the drawn card away.
 // MISMATCH: tried to swap several cards that were not the same.
-// RETURN: put a card taken from the discard pile back.
-export type ActionNoticeType = 'PEEK' | 'SPY' | 'SWAP' | 'DRAW' | 'PLACE' | 'DISCARD' | 'MISMATCH' | 'RETURN';
+// RETURN: put a card taken from the discard pile back. USE: plays a power card for its power.
+export type ActionNoticeType = 'PEEK' | 'SPY' | 'SWAP' | 'DRAW' | 'PLACE' | 'DISCARD' | 'MISMATCH' | 'RETURN' | 'USE';
 
 export interface ActionNotice {
   id: number;                // increases with every action, to tell new from old
@@ -101,6 +101,7 @@ export interface ActionNotice {
   fromDiscard?: boolean;     // DRAW
   cardRank?: Rank;           // DRAW from the discard pile, DISCARD, RETURN: the card everyone can see
   cardCount?: number;        // PLACE / MISMATCH: how many of their cards were swapped
+  powerUnused?: boolean;     // DISCARD: a power card thrown away without using its power
 }
 
 // ─── Play Style & Luck (counted per player and round) ───
