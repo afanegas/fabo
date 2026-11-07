@@ -292,6 +292,20 @@ export class GameRoom {
     return card;
   }
 
+  // Taken from the discard pile by mistake: put it back, the turn starts over
+  returnToDiscard(playerId: string): boolean {
+    if (!this.isPlayerTurn(playerId)) return false;
+    const card = this.drawnCard.get(playerId);
+    if (!card || !this.drawnFromDiscard.has(playerId)) return false;
+
+    this.discardPile.push(card);
+    this.drawnCard.delete(playerId);
+    this.drawnFromDiscard.delete(playerId);
+    this.stat(playerId).discardDraws--;
+    this.noteAction({ type: "RETURN", actor: this.getPlayer(playerId)!, cardRank: card.rank });
+    return true;
+  }
+
   keepDrawnCard(
     playerId: string,
     swapIndices: number[],

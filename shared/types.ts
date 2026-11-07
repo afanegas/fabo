@@ -86,7 +86,8 @@ export interface GameSettings {
 // PEEK / SPY / SWAP: card powers. DRAW: took a card from the deck or the discard pile.
 // PLACE: put the drawn card into their hand. DISCARD: threw the drawn card away.
 // MISMATCH: tried to swap several cards that were not the same.
-export type ActionNoticeType = 'PEEK' | 'SPY' | 'SWAP' | 'DRAW' | 'PLACE' | 'DISCARD' | 'MISMATCH';
+// RETURN: put a card taken from the discard pile back.
+export type ActionNoticeType = 'PEEK' | 'SPY' | 'SWAP' | 'DRAW' | 'PLACE' | 'DISCARD' | 'MISMATCH' | 'RETURN';
 
 export interface ActionNotice {
   id: number;                // increases with every action, to tell new from old
@@ -98,7 +99,7 @@ export interface ActionNotice {
   targetPlayerName?: string;
   targetCardIndex?: number;
   fromDiscard?: boolean;     // DRAW
-  cardRank?: Rank;           // DRAW from the discard pile, DISCARD: the card everyone can see
+  cardRank?: Rank;           // DRAW from the discard pile, DISCARD, RETURN: the card everyone can see
   cardCount?: number;        // PLACE / MISMATCH: how many of their cards were swapped
 }
 
@@ -168,6 +169,7 @@ export enum SocketEvents {
   DONE_MEMORIZING = 'done_memorizing',
   DRAW_FROM_DECK = 'draw_from_deck',
   DRAW_FROM_DISCARD = 'draw_from_discard',
+  RETURN_TO_DISCARD = 'return_to_discard',
   SWAP_CARD = 'swap_card',
   KEEP_DRAWN_CARD = 'keep_drawn_card',
   DISCARD_DRAWN_CARD = 'discard_drawn_card',

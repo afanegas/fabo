@@ -13,7 +13,7 @@ export const FreshCardMarker: React.FC<{ small?: boolean }> = ({ small }) => (
   >
     <span
       className={`absolute left-1/2 -translate-x-1/2 bg-emerald-400 text-cabo-dark font-display font-bold rounded-full leading-none
-        ${small ? '-top-2 text-[7px] px-1 py-0.5' : '-bottom-2.5 text-[10px] px-1.5 py-0.5'}`}
+        ${small ? '-top-2 text-[7px] px-1 py-0.5' : 'top-1 text-[10px] px-1.5 py-0.5'}`}
     >
       NEW
     </span>

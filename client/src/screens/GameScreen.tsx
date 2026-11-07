@@ -8,6 +8,7 @@ import { DrawAndDiscard } from '../components/DrawAndDiscard';
 import { ActionModal } from '../components/ActionModal';
 import { ScoreBoard } from '../components/ScoreBoard';
 import { PeekOverlay } from '../components/PeekOverlay';
+import { GameMessages } from '../components/GameMessages';
 import { LogOut } from 'lucide-react';
 import { CARD_ACTIONS } from '../constants/cards';
 
@@ -15,10 +16,6 @@ export const GameScreen: React.FC = () => {
   const {
     caboAlertActive,
     error,
-    snapNotification,
-    actionNotice,
-    personalNotices,
-    dismissPersonalNotice,
     leaveGame,
   } = useGameStore();
 
@@ -111,54 +108,6 @@ export const GameScreen: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Snap notification toast */}
-      <AnimatePresence>
-        {snapNotification && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="absolute top-14 left-1/2 -translate-x-1/2 z-40 bg-cabo-green/90 text-white px-4 py-2 rounded-xl text-sm font-display shadow-lg"
-          >
-            ⚡ {snapNotification}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* An opponent used Peek, Spy or Swap: on my cards it stays until I tap OK */}
-      <div className="absolute top-12 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-sm flex flex-col gap-2">
-        <AnimatePresence>
-          {personalNotices.map((n) => (
-            <motion.div
-              key={n.id}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex items-center gap-3 bg-cabo-red/95 text-white pl-4 pr-2 py-2 rounded-xl text-sm font-display font-semibold shadow-lg"
-            >
-              <span className="flex-1">{n.text}</span>
-              <button
-                onClick={() => dismissPersonalNotice(n.id)}
-                className="shrink-0 bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1 text-xs font-bold"
-              >
-                OK
-              </button>
-            </motion.div>
-          ))}
-          {actionNotice && (
-            <motion.div
-              key="banner"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="text-center bg-cabo-accent/95 text-cabo-dark px-4 py-2 rounded-xl text-sm font-display font-semibold shadow-lg"
-            >
-              {actionNotice}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
       {/* Opponents Desktop Layout */}
       <div className="hidden md:flex shrink-0 justify-center gap-3 px-4 py-3 flex-wrap">
         {opponents.map(p => (
@@ -212,9 +161,10 @@ export const GameScreen: React.FC = () => {
         )}
       </div>
 
-      {/* Center: Draw & Discard piles, takes the space that is left */}
-      <div className="flex-1 min-h-0 flex items-center justify-center">
+      {/* Center: Draw & Discard piles with the messages right below, takes the space that is left */}
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-3">
         <DrawAndDiscard />
+        <GameMessages />
       </div>
 
       {/* Turn indicator */}
@@ -235,7 +185,7 @@ export const GameScreen: React.FC = () => {
             className="text-cabo-accent font-display text-sm font-semibold"
           >
             {drawnCard ? (gameState.drawnFromDiscard
-                ? 'Select a card to swap (or several of the same value)'
+                ? 'Select a card to swap (or several of the same value), or put it back'
                 : drawnCard && CARD_ACTIONS[drawnCard.rank]
                   ? `Select a card to swap (or several of the same value), or use the ${CARD_ACTIONS[drawnCard.rank]?.toLowerCase()} power`
                   : 'Select a card to swap (or several of the same value), or Discard') :

@@ -7,6 +7,7 @@ export const useDrawAndDiscard = () => {
     drawnCard,
     drawFromDeck,
     drawFromDiscard,
+    returnToDiscard,
     discardDrawnCard,
     actionMode,
   } = useGameStore();
@@ -24,6 +25,7 @@ export const useDrawAndDiscard = () => {
     canDiscard,
     drawFromDeck,
     drawFromDiscard,
+    returnToDiscard,
     discardDrawnCard,
   };
 };

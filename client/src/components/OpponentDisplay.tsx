@@ -63,20 +63,22 @@ export const OpponentDisplay: React.FC<OpponentDisplayProps> = ({ player, onCard
                 whileHover={isSelectableForAction ? { scale: 1.1, y: -3 } : {}}
                 whileTap={isSelectableForAction ? { scale: 0.95 } : {}}
                 onClick={() => isSelectableForAction && onCardClick?.(i)}
-                className={`
-                  w-7 h-10 md:w-10 md:h-14 rounded md:rounded-lg card-face-down border border-cabo-border
-                  ${isSelectableForAction ? 'cursor-pointer hover:border-cabo-accent/50' : ''}
-                  ${isCurrentTurn ? 'border-cabo-accent/30' : ''}
-                  ${highlightAt(i) ? 'ring-2 ring-cabo-accent card-glow' : ''}
-                  relative
-                `}
+                className="flex flex-col items-center"
               >
-                <div className="w-full h-full flex flex-col items-center justify-center gap-[1px]">
-                  <span className="text-cabo-accent/30 text-[6px] md:text-[8px] font-bold leading-none">C</span>
-                  <span className="text-cabo-accent/30 text-[5px] md:text-[6px] font-display leading-none">{i + 1}</span>
+                <div
+                  className={`
+                    w-7 h-10 md:w-10 md:h-14 rounded md:rounded-lg card-face-down border border-cabo-border
+                    ${isSelectableForAction ? 'cursor-pointer hover:border-cabo-accent/50' : ''}
+                    ${isCurrentTurn ? 'border-cabo-accent/30' : ''}
+                    ${highlightAt(i) ? 'ring-2 ring-cabo-accent card-glow' : ''}
+                    relative
+                  `}
+                >
+                  <CardActionMarker highlight={highlightAt(i)} small />
+                  {freshCardIds.includes(cardId) && <FreshCardMarker small />}
                 </div>
-                <CardActionMarker highlight={highlightAt(i)} small />
-                {freshCardIds.includes(cardId) && <FreshCardMarker small />}
+                {/* Quiet position number, counted from the left as shown here */}
+                <span className="mt-0.5 text-[8px] md:text-[10px] leading-none font-display text-cabo-textDim/50">{i + 1}</span>
               </motion.div>
             ))}
           </AnimatePresence>

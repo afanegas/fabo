@@ -54,6 +54,7 @@ interface GameStore {
   doneMemorizing: () => Promise<void>;
   drawFromDeck: () => Promise<void>;
   drawFromDiscard: () => Promise<void>;
+  returnToDiscard: () => Promise<void>;
   keepDrawnCard: (swapIndices: number[]) => Promise<void>;
   discardDrawnCard: () => Promise<void>;
   useAction: (data: { targetPlayerId?: string; myCardIndex?: number; targetCardIndex?: number }, keepActionOpen?: boolean) => Promise<void>;
@@ -351,6 +352,16 @@ export const useGameStore = create<GameStore>()(
       }
     } catch (err) {
       get().setError('Failed to draw');
+    }
+  },
+
+  returnToDiscard: async () => {
+    try {
+      const res: any = await socketService.emit(SocketEvents.RETURN_TO_DISCARD);
+      if (res.success) set({ drawnCard: null, swapSelection: [] });
+      else get().setError('Cannot put the card back');
+    } catch (err) {
+      get().setError('Failed to put the card back');
     }
   },
 

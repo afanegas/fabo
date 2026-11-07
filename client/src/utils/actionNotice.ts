@@ -14,6 +14,7 @@ export const ACTION_ICONS: Record<ActionNotice['type'], string> = {
   PLACE: '📥',
   DISCARD: '🗑',
   MISMATCH: '❌',
+  RETURN: '↩',
 };
 
 // Card powers stay a little longer; drawing, placing and discarding just flash by
@@ -23,11 +24,8 @@ export const noticeDuration = (a: ActionNotice) =>
 // Spied on or swapped with one of my cards
 export const concernsMe = (a: ActionNotice, myId: string | null) => a.targetPlayerId === myId;
 
-// Cards count from the left, as they lie on the table
-const ordinal = (index?: number) => {
-  const n = (index ?? 0) + 1;
-  return n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`;
-};
+// Same numbers as shown under the cards, counted from the left
+const cardNo = (index?: number) => `card ${(index ?? 0) + 1}`;
 
 // Message for everyone except the player who made the move
 export function describeAction(a: ActionNotice, myId: string | null): string {
@@ -35,21 +33,23 @@ export function describeAction(a: ActionNotice, myId: string | null): string {
   const icon = ACTION_ICONS[a.type];
   switch (a.type) {
     case 'PEEK':
-      return `${icon} ${a.actorName} peeked at their ${ordinal(a.actorCardIndex)} card`;
+      return `${icon} ${a.actorName} peeked at their ${cardNo(a.actorCardIndex)}`;
     case 'SPY':
-      return `${icon} ${a.actorName} spied on ${target} ${ordinal(a.targetCardIndex)} card`;
+      return `${icon} ${a.actorName} spied on ${target} ${cardNo(a.targetCardIndex)}`;
     case 'SWAP':
-      return `${icon} ${a.actorName} swapped their ${ordinal(a.actorCardIndex)} card with ${target} ${ordinal(a.targetCardIndex)} card`;
+      return `${icon} ${a.actorName} swapped their ${cardNo(a.actorCardIndex)} with ${target} ${cardNo(a.targetCardIndex)}`;
     case 'DRAW':
       return a.fromDiscard
         ? `${icon} ${a.actorName} took the ${a.cardRank} from the discard pile`
         : `${icon} ${a.actorName} drew a card from the deck`;
     case 'PLACE':
       return (a.cardCount ?? 1) > 1
-        ? `${icon} ${a.actorName} swapped ${a.cardCount} matching cards for it — now their ${ordinal(a.actorCardIndex)} card`
-        : `${icon} ${a.actorName} put it in their ${ordinal(a.actorCardIndex)} place`;
+        ? `${icon} ${a.actorName} swapped ${a.cardCount} matching cards for it — it is now their ${cardNo(a.actorCardIndex)}`
+        : `${icon} ${a.actorName} put it in place of their ${cardNo(a.actorCardIndex)}`;
     case 'DISCARD':
       return `${icon} ${a.actorName} discarded the ${a.cardRank}`;
+    case 'RETURN':
+      return `${icon} ${a.actorName} put the ${a.cardRank} back on the discard pile`;
     case 'MISMATCH':
       return `${icon} ${a.actorName} tried to swap ${a.cardCount} cards that didn't match — turn lost`;
   }

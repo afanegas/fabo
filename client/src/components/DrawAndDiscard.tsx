@@ -16,6 +16,7 @@ export const DrawAndDiscard: React.FC = () => {
     canDiscard,
     drawFromDeck,
     drawFromDiscard,
+    returnToDiscard,
     discardDrawnCard,
   } = useDrawAndDiscard();
 
@@ -122,7 +123,16 @@ export const DrawAndDiscard: React.FC = () => {
                   {drawnAction ? ACTION_BUTTON_LABELS[drawnAction] : 'Discard'}
                 </button>
               ) : (
-                <span className="text-cabo-textDim text-[10px] font-display">Must swap</span>
+                <>
+                  <span className="text-cabo-textDim text-[10px] font-display">Swap it, or</span>
+                  {/* Taken by mistake: put it back and choose again */}
+                  <button
+                    onClick={returnToDiscard}
+                    className="btn-secondary text-xs px-3 py-1.5"
+                  >
+                    ↩ Put back
+                  </button>
+                </>
               )}
             </div>
           </motion.div>

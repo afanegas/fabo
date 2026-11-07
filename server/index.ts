@@ -277,6 +277,16 @@ io.on("connection", (socket: Socket) => {
     broadcastState(room);
   });
 
+  // ─── Put a card taken from the discard pile back ───
+  socket.on(SocketEvents.RETURN_TO_DISCARD, (_: any, callback: any) => {
+    const { room, player } = getContext(socket);
+    if (!room || !player) return callback?.({ success: false });
+
+    const success = room.returnToDiscard(player.id);
+    callback?.({ success });
+    if (success) broadcastState(room);
+  });
+
   // ─── Keep Drawn Card (Swap) ───
   socket.on(
     SocketEvents.KEEP_DRAWN_CARD,

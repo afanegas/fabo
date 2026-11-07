@@ -47,18 +47,22 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({ centerSlot }) => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -120, scale: 0.6, transition: { duration: 0.6 } }}
               transition={{ type: 'spring', stiffness: 90, damping: 16, mass: 1 }}
-              className="relative"
+              className="flex flex-col items-center"
             >
-              <Card
-                card={card}
-                faceDown={!card.isRevealed}
-                onClick={() => handleCardClick(index)}
-                selected={selectedCardIndex === index || swapSelection.includes(index)}
-                glowing={snapActive || !!highlightAt(index)}
-                size="lg"
-              />
-              <CardActionMarker highlight={highlightAt(index)} />
-              {freshCardIds.includes(card.id) && <FreshCardMarker />}
+              <div className="relative">
+                <Card
+                  card={card}
+                  faceDown={!card.isRevealed}
+                  onClick={() => handleCardClick(index)}
+                  selected={selectedCardIndex === index || swapSelection.includes(index)}
+                  glowing={snapActive || !!highlightAt(index)}
+                  size="lg"
+                />
+                <CardActionMarker highlight={highlightAt(index)} />
+                {freshCardIds.includes(card.id) && <FreshCardMarker />}
+              </div>
+              {/* Quiet position number, the same numbers the messages use */}
+              <span className="mt-1 text-[10px] leading-none font-display text-cabo-textDim/50">{index + 1}</span>
             </motion.div>
           ))}
         </AnimatePresence>
