@@ -4,7 +4,7 @@ import { Server, Socket } from "socket.io";
 import cors from "cors";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
-import { SocketEvents, GameSettings } from "../shared/types";
+import { SocketEvents, GameSettings, RpsChoice } from "../shared/types";
 import { GameRoom } from "./game/GameRoom";
 import { CONFIG } from "../shared/rules";
 import {
@@ -204,6 +204,16 @@ io.on("connection", (socket: Socket) => {
     callback?.({ success: true });
     io.to(room.code).emit(SocketEvents.GAME_STARTED);
     broadcastState(room);
+  });
+
+  // ─── Rock-paper-scissors: who starts ───
+  socket.on(SocketEvents.RPS_PICK, (data: { choice: RpsChoice }, callback: any) => {
+    const { room, player } = getContext(socket);
+    if (!room || !player) return callback?.({ success: false });
+
+    const success = room.pickStarter(player.id, data?.choice);
+    callback?.({ success });
+    if (success) broadcastState(room);
   });
 
   // ─── Game Settings (waiting room) ───

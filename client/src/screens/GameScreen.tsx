@@ -9,6 +9,7 @@ import { ActionModal } from '../components/ActionModal';
 import { ScoreBoard } from '../components/ScoreBoard';
 import { PeekOverlay } from '../components/PeekOverlay';
 import { GameMessages } from '../components/GameMessages';
+import { StarterPick } from '../components/StarterPick';
 import { LogOut } from 'lucide-react';
 import { CARD_ACTIONS } from '../constants/cards';
 
@@ -108,63 +109,30 @@ export const GameScreen: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Opponents Desktop Layout */}
-      <div className="hidden md:flex shrink-0 justify-center gap-3 px-4 py-3 flex-wrap">
+      {/* Opponents across the table. With one opponent their cards are as big as mine. */}
+      <div className="shrink-0 flex flex-wrap justify-center gap-2 md:gap-3 px-2 pt-2">
         {opponents.map(p => (
           <OpponentDisplay
             key={p.id}
             player={p}
+            size={opponents.length === 1 ? 'table' : opponents.length === 2 ? 'md' : 'sm'}
             onCardClick={(idx) => handleOpponentCardClick(p.id, idx)}
           />
         ))}
       </div>
 
-      {/* Opponents Mobile Layout */}
-      <div className="md:hidden flex flex-col w-full px-2 py-1 gap-1 shrink-0">
-        {opponents.length > 0 && (
-          <div className="flex justify-center w-full">
-            <OpponentDisplay
-              key={opponents[0].id}
-              player={opponents[0]}
-              onCardClick={(idx) => handleOpponentCardClick(opponents[0].id, idx)}
-            />
-          </div>
-        )}
-        {(opponents.length > 1 || opponents.length > 2) && (
-          <div className="flex justify-between w-full px-2">
-            {opponents.length > 1 && (
-              <OpponentDisplay
-                key={opponents[1].id}
-                player={opponents[1]}
-                onCardClick={(idx) => handleOpponentCardClick(opponents[1].id, idx)}
-              />
-            )}
-            {opponents.length > 2 && (
-              <OpponentDisplay
-                key={opponents[2].id}
-                player={opponents[2]}
-                onCardClick={(idx) => handleOpponentCardClick(opponents[2].id, idx)}
-              />
-            )}
-          </div>
-        )}
-        {opponents.length > 3 && (
-          <div className="flex justify-center flex-wrap gap-2 w-full mt-2">
-            {opponents.slice(3).map(p => (
-              <OpponentDisplay
-                key={p.id}
-                player={p}
-                onCardClick={(idx) => handleOpponentCardClick(p.id, idx)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Center: Draw & Discard piles with the messages right below, takes the space that is left */}
-      <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-3">
-        <DrawAndDiscard />
-        <GameMessages />
+      <div className="relative flex-1 min-h-0 flex flex-col items-center justify-center gap-3 py-2">
+        {/* The table: a soft oval behind the piles, setting them apart from both hands */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-3 inset-y-1 md:inset-x-[18%] rounded-[50%] border border-white/[0.06]"
+          style={{ background: 'radial-gradient(ellipse at center, rgba(46,204,113,0.10) 0%, rgba(46,204,113,0.03) 55%, transparent 75%)' }}
+        />
+        <div className="relative w-full flex flex-col items-center gap-3">
+          <DrawAndDiscard />
+          <GameMessages />
+        </div>
       </div>
 
       {/* Turn indicator */}
@@ -193,7 +161,7 @@ export const GameScreen: React.FC = () => {
               'Your turn — Draw or Call Cabo'}
           </motion.p>
         )}
-        {!isMyTurn && !isMemorize && !gameState.snapWindowActive && gameState.phase !== 'ROUND_END' && gameState.phase !== 'GAME_OVER' && (
+        {!isMyTurn && !isMemorize && !gameState.snapWindowActive && !['ROUND_END', 'GAME_OVER', 'STARTER_PICK'].includes(gameState.phase) && (
           <p className="text-cabo-textDim font-display text-xs">
             {gameState.players.find(p => p.id === gameState.currentTurnPlayerId)?.name}'s turn
           </p>
@@ -276,6 +244,7 @@ export const GameScreen: React.FC = () => {
       {actionMode && <ActionModal />}
       <ScoreBoard />
       <PeekOverlay />
+      <StarterPick />
 
       {/* Abandoned game overlay */}
       <AnimatePresence>

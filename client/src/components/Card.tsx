@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card as CardType, PlayerCardInfo } from '@shared/types';
-import { CARD_SIZE_CLASSES } from '../constants/cards';
+import { CARD_SIZE_CLASSES, CardSize } from '../constants/cards';
 import { CardFace } from './CardFace';
 
 interface CardProps {
@@ -10,7 +10,7 @@ interface CardProps {
   onClick?: () => void;
   selected?: boolean;
   glowing?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  size?: CardSize;
   index?: number;
   disabled?: boolean;
 }

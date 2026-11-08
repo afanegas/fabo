@@ -1,121 +1,85 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Hand } from 'lucide-react';
 import { PlayerState } from '@shared/types';
 import { useGameStore, mergeHighlights } from '../store/gameStore';
 import { CardActionMarker } from './CardActionMarker';
-import { CardFace } from './CardFace';
 import { FreshCardMarker } from './FreshCardMarker';
+import { CARD_SIZE_CLASSES, CardSize } from '../constants/cards';
 
 interface OpponentDisplayProps {
   player: PlayerState;
   onCardClick?: (index: number) => void;
+  size?: CardSize; // 'table' with a single opponent: as big as my own cards
 }
 
-export const OpponentDisplay: React.FC<OpponentDisplayProps> = ({ player, onCardClick }) => {
-  const { gameState, playerId, actionMode, selectedCardIndex, actionHighlights, personalNotices, freshCardIds } = useGameStore();
+export const OpponentDisplay: React.FC<OpponentDisplayProps> = ({ player, onCardClick, size = 'table' }) => {
+  const { gameState, actionMode, actionHighlights, personalNotices, freshCardIds } = useGameStore();
   const highlights = mergeHighlights(actionHighlights, personalNotices);
   const highlightAt = (index: number) =>
     highlights.find((h) => h.playerId === player.id && h.cardIndex === index);
   const isCurrentTurn = gameState?.currentTurnPlayerId === player.id;
   const isSelectableForAction = actionMode === 'SPY' || actionMode === 'SWAP';
-  // The card this opponent is holding on their turn: open from the discard pile, hidden from the deck
-  const drawn = gameState?.opponentDrawn?.playerId === player.id ? gameState.opponentDrawn : null;
-  // Card ids let each card keep its identity, so moves and new cards can be animated
+  // Card ids let each card keep its identity, so it can be followed when it moves
   const cardIds = player.cardIds ?? Array.from({ length: player.cardCount }, (_, i) => `${player.id}-${i}`);
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
       className={`
-        glass-panel p-1.5 md:p-3 flex flex-col items-center gap-1.5 md:gap-2 min-w-[80px] md:min-w-[120px]
-        ${isCurrentTurn ? 'active-turn-glow border-cabo-accent/50' : ''}
-        ${player.isCaboCaller ? 'border-cabo-red/50' : ''}
+        rounded-3xl border px-3 pt-2 pb-2.5 md:px-4 md:pt-3 flex flex-col items-center gap-2
+        bg-gradient-to-b from-white/[0.06] to-white/[0.02] backdrop-blur-md transition-all duration-500
+        ${isCurrentTurn ? 'border-cabo-accent/60 shadow-[0_0_30px_rgba(212,175,55,0.25)]' : 'border-white/10'}
+        ${player.isCaboCaller ? 'border-cabo-red/60' : ''}
         ${!player.isConnected ? 'opacity-40' : ''}
       `}
     >
       {/* Name + status */}
       <div className="flex items-center gap-2">
-        <div className={`w-2 h-2 rounded-full ${player.isConnected ? 'bg-cabo-green' : 'bg-gray-500'}`} />
-        <span className="text-[10px] md:text-xs font-display font-semibold truncate max-w-[60px] md:max-w-[80px]">
-          {player.name}
-        </span>
+        <div
+          className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-display font-bold
+            ${isCurrentTurn ? 'bg-cabo-accent text-cabo-dark' : 'bg-white/10 text-cabo-text'}`}
+        >
+          {player.name.charAt(0).toUpperCase()}
+        </div>
+        <span className="text-xs md:text-sm font-display font-semibold truncate max-w-[110px]">{player.name}</span>
+        {isCurrentTurn && <span className="text-[10px] text-cabo-accent font-display">· playing</span>}
+        {!player.isConnected && <span className="text-[10px] text-cabo-textDim font-display">· offline</span>}
         {player.isCaboCaller && (
-          <span className="text-[8px] md:text-[10px] bg-cabo-red/20 text-cabo-red px-1 md:px-1.5 py-0.5 rounded-full font-bold">
-            CABO
-          </span>
+          <span className="text-[10px] bg-cabo-red/20 text-cabo-red px-1.5 py-0.5 rounded-full font-bold">CABO</span>
         )}
       </div>
 
-      <div className="flex items-center gap-2 md:gap-3">
-        {/* Cards (face-down backs) */}
-        <div className="flex gap-1 flex-wrap justify-center">
-          <AnimatePresence mode="popLayout" initial={false}>
-            {cardIds.map((cardId, i) => (
-              <motion.div
-                key={cardId}
-                layout
-                initial={{ opacity: 0, y: 60, scale: 0.5 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 60, scale: 0.5, transition: { duration: 0.6 } }}
-                transition={{ type: 'spring', stiffness: 90, damping: 16 }}
-                whileHover={isSelectableForAction ? { scale: 1.1, y: -3 } : {}}
-                whileTap={isSelectableForAction ? { scale: 0.95 } : {}}
-                onClick={() => isSelectableForAction && onCardClick?.(i)}
-                className="flex flex-col items-center"
-              >
-                <div
-                  className={`
-                    w-7 h-10 md:w-10 md:h-14 rounded md:rounded-lg card-face-down border border-cabo-border
-                    ${isSelectableForAction ? 'cursor-pointer hover:border-cabo-accent/50' : ''}
-                    ${isCurrentTurn ? 'border-cabo-accent/30' : ''}
-                    ${highlightAt(i) ? 'ring-2 ring-cabo-accent card-glow' : ''}
-                    relative
-                  `}
-                >
-                  <CardActionMarker highlight={highlightAt(i)} small />
-                  {freshCardIds.includes(cardId) && <FreshCardMarker small />}
-                </div>
-                {/* Quiet position number, counted from the left as shown here */}
-                <span className="mt-0.5 text-[8px] md:text-[10px] leading-none font-display text-cabo-textDim/50">{i + 1}</span>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-
-        {/* Drawn card in their hand, like my own drawn card on my side of the table */}
-        <AnimatePresence>
-          {drawn && (
+      {/* Cards (face-down backs). The layoutId lets a card fly to wherever it goes next. */}
+      <div className="flex gap-2 md:gap-3 justify-center">
+        <AnimatePresence mode="popLayout" initial={false}>
+          {cardIds.map((cardId, i) => (
             <motion.div
-              key={drawn.card?.id ?? 'hidden'}
-              initial={{ opacity: 0, scale: 0.5, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.5 }}
-              className="flex flex-col items-center gap-0.5"
+              key={cardId}
+              layoutId={cardId}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.6, transition: { duration: 0.5 } }}
+              transition={{ type: 'spring', stiffness: 70, damping: 15 }}
+              whileHover={isSelectableForAction ? { scale: 1.06, y: -3 } : {}}
+              whileTap={isSelectableForAction ? { scale: 0.95 } : {}}
+              onClick={() => isSelectableForAction && onCardClick?.(i)}
+              className="flex flex-col items-center"
             >
-              <div className="relative">
-                <div
-                  className={`relative w-9 h-12 md:w-12 md:h-16 rounded md:rounded-lg overflow-hidden border border-cabo-accent/60 card-glow text-[9px] md:text-xs
-                    ${drawn.card ? 'bg-cabo-surface' : 'card-face-down'}`}
-                >
-                  {drawn.card && <CardFace rank={drawn.card.rank} />}
-                </div>
-                <motion.span
-                  initial={{ y: -16, opacity: 0, rotate: -20 }}
-                  animate={{ y: 0, opacity: 1, rotate: 0 }}
-                  transition={{ type: 'spring', stiffness: 200, damping: 12, delay: 0.1 }}
-                  className="absolute -left-2.5 -bottom-2 pointer-events-none"
-                  aria-hidden
-                >
-                  <Hand size={18} fill="#f5e6c8" strokeWidth={1.5} className="text-cabo-accent drop-shadow" />
-                </motion.span>
+              <div
+                className={`
+                  ${CARD_SIZE_CLASSES[size]} rounded-xl card-face-down border border-white/15 shadow-lg relative
+                  ${isSelectableForAction ? 'cursor-pointer hover:border-cabo-accent/60' : ''}
+                  ${highlightAt(i) ? 'ring-2 ring-cabo-accent card-glow' : ''}
+                `}
+              >
+                <CardActionMarker highlight={highlightAt(i)} small={size === 'sm'} />
+                {freshCardIds.includes(cardId) && <FreshCardMarker small={size === 'sm'} />}
               </div>
-              <span className="text-[8px] md:text-[10px] text-cabo-textDim font-display leading-none">
-                {drawn.fromDiscard ? 'from pile' : 'from deck'}
-              </span>
+              {/* Quiet position number, counted from the left as shown here */}
+              <span className="mt-1 text-[10px] leading-none font-display text-cabo-textDim/50">{i + 1}</span>
             </motion.div>
-          )}
+          ))}
         </AnimatePresence>
       </div>
     </motion.div>

@@ -233,7 +233,8 @@ export const ChampionshipScreen: React.FC = () => {
                   <span className="text-cabo-textDim">{formatDate(g.endedAt)}</span>
                   <span className="font-display">
                     {CHAMPIONS.map(({ id }) => g.totals[id]).join(' : ')}
-                    <span className="text-cabo-textDim"> · {g.rounds.length} rounds</span>
+                    {/* Games are single rounds now; older games could have several */}
+                    {g.rounds.length > 1 && <span className="text-cabo-textDim"> · {g.rounds.length} rounds</span>}
                   </span>
                   <span
                     className="font-display font-semibold"

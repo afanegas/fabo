@@ -57,12 +57,8 @@ export function recordChampionshipGames(
       fane: room.totalScores.fane ?? 0,
       lebo: room.totalScores.lebo ?? 0,
     };
-    const winner: ChampionId | null =
-      totals.fane === totals.lebo
-        ? null
-        : totals.fane < totals.lebo
-          ? "fane"
-          : "lebo";
+    // Every championship game is a single round, so the round winner wins the game
+    const winner: ChampionId | null = isChampionId(result.winnerId) ? result.winnerId : null;
 
     try {
       store.addGame({

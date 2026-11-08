@@ -13,6 +13,8 @@ import {
   GameSettings,
   ActionNotice,
   OpponentDrawnCard,
+  RpsChoice,
+  StarterPickState,
 } from "../../shared/types";
 import { CONFIG, BEST_RANK, DEFAULT_GAME_SETTINGS } from "../../shared/rules";
 import { Deck } from "./Deck";
@@ -59,6 +61,13 @@ export class GameRoom {
   settings: GameSettings = { ...DEFAULT_GAME_SETTINGS };
   lastAction: ActionNotice | null = null;
   private actionCounter = 0;
+  startingIndex: number = 0; // who starts the current round
+  private rps: {
+    candidates: string[];
+    picks: Map<string, RpsChoice>;
+    reveal: NonNullable<StarterPickState["reveal"]> | null;
+  } | null = null;
+  private rpsTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(code: string, mode: GameMode = "normal") {
     this.code = code;
@@ -122,6 +131,8 @@ export class GameRoom {
     // Check if enough players remain
     if (this.activePlayers.length < CONFIG.MIN_PLAYERS) {
       this.clearSnapTimer();
+      if (this.rpsTimer) clearTimeout(this.rpsTimer);
+      this.rps = null;
       this.phase = "ABANDONED";
       this.onStateUpdate?.();
       return { abandoned: true };
@@ -138,11 +149,19 @@ export class GameRoom {
       this.advanceTurn();
     }
 
+    // Rock-paper-scissors goes on without the player who left
+    if (this.phase === "STARTER_PICK" && this.rps && !this.rps.reveal) {
+      this.rps.candidates = this.rps.candidates.filter((id) => id !== playerId);
+      this.rps.picks.delete(playerId);
+      if (this.rps.candidates.length === 1) this.finishStarterPick(this.rps.candidates[0]);
+      else if (this.rps.picks.size === this.rps.candidates.length) this.revealStarterPick();
+    }
+
     // If in MEMORIZE phase, check if remaining players are all ready
     if (this.phase === "MEMORIZE") {
       if (this.memorizeReady.size >= this.activePlayers.length) {
         this.phase = "PLAYING";
-        this.currentTurnIndex = 0;
+        this.currentTurnIndex = this.firstConnectedFrom(this.startingIndex);
         for (const p of this.players) {
           p.peekedIndices.clear();
         }
@@ -166,6 +185,15 @@ export class GameRoom {
     return this.players[this.currentTurnIndex];
   }
 
+  // The player at this seat, or the next one still connected
+  private firstConnectedFrom(index: number): number {
+    for (let i = 0; i < this.players.length; i++) {
+      const idx = (index + i) % this.players.length;
+      if (this.players[idx].isConnected) return idx;
+    }
+    return index;
+  }
+
   get activePlayers(): Player[] {
     return this.players.filter((p) => p.isConnected);
   }
@@ -179,7 +207,65 @@ export class GameRoom {
     this.roundNumber = 1;
     this.startedAt = new Date().toISOString();
     this.startRound();
+    // Cards are dealt, but first rock-paper-scissors decides who starts
+    this.phase = "STARTER_PICK";
+    this.rps = { candidates: this.activePlayers.map((p) => p.id), picks: new Map(), reveal: null };
     return true;
+  }
+
+  // ─── Rock-paper-scissors: who starts ───
+
+  pickStarter(playerId: string, choice: RpsChoice): boolean {
+    const rps = this.rps;
+    if (this.phase !== "STARTER_PICK" || !rps || rps.reveal) return false;
+    if (!rps.candidates.includes(playerId) || rps.picks.has(playerId)) return false;
+    if (!["rock", "paper", "scissors"].includes(choice)) return false;
+    rps.picks.set(playerId, choice);
+    if (rps.picks.size === rps.candidates.length) this.revealStarterPick();
+    return true;
+  }
+
+  private revealStarterPick(): void {
+    const rps = this.rps!;
+    const used = new Set(rps.picks.values());
+    const picks = Object.fromEntries(rps.picks);
+    const beats: Record<RpsChoice, RpsChoice> = { rock: "scissors", paper: "rock", scissors: "paper" };
+
+    // Exactly two different choices: the winning one goes on. All the same or all three: again.
+    let outcome: "tie" | "narrowed" | "winner" = "tie";
+    let next = rps.candidates;
+    if (used.size === 2) {
+      const [a, b] = [...used];
+      const winning = beats[a] === b ? a : b;
+      next = rps.candidates.filter((id) => rps.picks.get(id) === winning);
+      outcome = next.length === 1 ? "winner" : "narrowed";
+    }
+    rps.reveal = { picks, outcome, winnerId: outcome === "winner" ? next[0] : undefined };
+
+    // Everyone sees the choices for a moment before the game goes on
+    this.rpsTimer = setTimeout(() => {
+      this.rpsTimer = null;
+      if (this.phase !== "STARTER_PICK" || !this.rps) return;
+      if (outcome === "winner") this.finishStarterPick(next[0]);
+      else this.rps = { candidates: next, picks: new Map(), reveal: null };
+      this.onStateUpdate?.();
+    }, 3000);
+  }
+
+  private finishStarterPick(winnerId: string): void {
+    this.startingIndex = Math.max(0, this.players.findIndex((p) => p.id === winnerId));
+    this.rps = null;
+    this.phase = "MEMORIZE";
+  }
+
+  private starterPickState(playerId: string): StarterPickState | null {
+    if (!this.rps) return null;
+    return {
+      candidates: this.rps.candidates,
+      pickedIds: [...this.rps.picks.keys()],
+      myPick: this.rps.picks.get(playerId) ?? null,
+      reveal: this.rps.reveal,
+    };
   }
 
   startRound(): void {
@@ -245,7 +331,7 @@ export class GameRoom {
     );
     if (this.memorizeReady.size >= this.activePlayers.length) {
       this.phase = "PLAYING";
-      this.currentTurnIndex = 0;
+      this.currentTurnIndex = this.firstConnectedFrom(this.startingIndex);
       console.log("All players ready, phase -> PLAYING");
       // Clear peeked indices so they can't look again
       for (const player of this.players) {
@@ -725,7 +811,7 @@ export class GameRoom {
     const card = holder && this.drawnCard.get(holder.id);
     if (!holder || !card) return null;
     const fromDiscard = this.drawnFromDiscard.has(holder.id);
-    return { playerId: holder.id, fromDiscard, card: fromDiscard ? card : null };
+    return { playerId: holder.id, cardId: card.id, fromDiscard, card: fromDiscard ? card : null };
   }
 
   // Ends the turn after a discard: with Snap on, others get a few seconds to snap first
@@ -793,10 +879,10 @@ export class GameRoom {
       );
     }
 
-    // Check if game should end
-    const gameOver = Object.values(this.totalScores).some(
-      (score) => score >= CONFIG.GAME_END_SCORE,
-    );
+    // Check if game should end. In the championship every round is a game of its own.
+    const gameOver =
+      this.mode === "championship" ||
+      Object.values(this.totalScores).some((score) => score >= CONFIG.GAME_END_SCORE);
     if (gameOver) {
       this.phase = "GAME_OVER";
     }
@@ -808,6 +894,8 @@ export class GameRoom {
   startNextRound(): void {
     if (this.phase !== "ROUND_END") return;
     this.roundNumber++;
+    // After the first round the start moves on to the next player
+    this.startingIndex = (this.startingIndex + 1) % this.players.length;
     this.startRound();
     this.onStateUpdate?.();
   }
@@ -857,7 +945,11 @@ export class GameRoom {
       roomCode: this.code,
       mode: this.mode,
       phase: this.phase,
-      currentTurnPlayerId: this.currentPlayer?.id || null,
+      // Nobody is on turn yet while the starter is picked and the cards are memorized
+      currentTurnPlayerId:
+        this.phase === "STARTER_PICK" || this.phase === "MEMORIZE"
+          ? null
+          : this.currentPlayer?.id || null,
       players,
       myCards,
       discardTop:
@@ -888,6 +980,7 @@ export class GameRoom {
       discardBlocked:
         !!this.currentPlayer && this.drawnFromDiscard.has(this.currentPlayer.id),
       opponentDrawn: this.opponentDrawnCard(),
+      starterPick: this.starterPickState(playerId),
     };
   }
 }

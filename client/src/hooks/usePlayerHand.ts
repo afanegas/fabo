@@ -66,6 +66,7 @@ export const usePlayerHand = () => {
   return {
     gameState,
     playerId,
+    isMyTurn,
     highlights: mergeHighlights(actionHighlights, personalNotices),
     freshCardIds,
     drawnCard,

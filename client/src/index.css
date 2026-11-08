@@ -32,6 +32,21 @@
     background: linear-gradient(145deg, #1a1a2e, #16162a);
   }
 
+  /* Table card sizes follow the screen height (2:3 cards), so both hands and the piles always fit */
+  .card-size-table {
+    --card-h: clamp(4.5rem, 12.5vh, 9rem);
+    --card-h: clamp(4.5rem, 12.5dvh, 9rem);
+    height: var(--card-h);
+    width: calc(var(--card-h) * 2 / 3);
+  }
+
+  .card-size-pile {
+    --card-h: clamp(4rem, 11vh, 7.5rem);
+    --card-h: clamp(4rem, 11dvh, 7.5rem);
+    height: var(--card-h);
+    width: calc(var(--card-h) * 2 / 3);
+  }
+
   .card-face-down {
     background: #c96a6a url('./assets/cards/back.webp') center / cover no-repeat;
   }

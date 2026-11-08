@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { ClientGameState, Card, ActionType, GamePhase, GameSettings } from '@shared/types';
+import { ClientGameState, Card, ActionType, GamePhase, GameSettings, RpsChoice } from '@shared/types';
 import { CONFIG } from '@shared/rules';
 import { ChampionId } from '@shared/championship';
 import { socketService, SocketEvents } from '../services/socket';
@@ -49,6 +49,7 @@ interface GameStore {
   setChampionshipOpen: (open: boolean) => void;
   updateSettings: (changes: Partial<GameSettings>) => Promise<void>;
   dismissPersonalNotice: (id: number) => void;
+  pickStarter: (choice: RpsChoice) => Promise<void>;
   startGame: () => Promise<void>;
   peekInitialCard: (index: number) => Promise<void>;
   doneMemorizing: () => Promise<void>;
@@ -288,6 +289,15 @@ export const useGameStore = create<GameStore>()(
   },
 
   setChampionshipOpen: (open) => set({ championshipOpen: open }),
+
+  pickStarter: async (choice) => {
+    try {
+      const res: any = await socketService.emit(SocketEvents.RPS_PICK, { choice });
+      if (!res.success) get().setError('Cannot pick right now');
+    } catch (err) {
+      get().setError('Failed to pick');
+    }
+  },
 
   dismissPersonalNotice: (id) =>
     set({ personalNotices: get().personalNotices.filter((n) => n.id !== id) }),

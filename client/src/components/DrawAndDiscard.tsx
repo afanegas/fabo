@@ -11,6 +11,8 @@ const ACTION_BUTTON_LABELS = { PEEK: 'Use Peek', SPY: 'Use Spy', SWAP: 'Use Swap
 export const DrawAndDiscard: React.FC = () => {
   const {
     gameState,
+    opponentDrawn,
+    opponentDrawnName,
     drawnCard,
     canDraw,
     canDiscard,
@@ -27,8 +29,39 @@ export const DrawAndDiscard: React.FC = () => {
   // A power card is used by putting it on the discard pile, so the button says so
   const drawnAction = drawnCard ? CARD_ACTIONS[drawnCard.rank] : null;
 
+  // Cards carry their id as layoutId, so a card flies from the pile to a hand and back
   return (
     <div className="flex flex-col items-center gap-3">
+      {/* Opponent's drawn card, on their side of the piles: hidden from the deck, open from the pile */}
+      <AnimatePresence>
+        {opponentDrawn && (
+          <motion.div
+            key={`opp-${opponentDrawn.cardId}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex items-center gap-3"
+          >
+            <motion.div
+              layoutId={opponentDrawn.cardId}
+              transition={{ type: 'spring', stiffness: 70, damping: 15 }}
+              className={`relative card-size-pile rounded-xl overflow-hidden border border-cabo-accent/60 card-glow text-xs
+                ${opponentDrawn.card ? 'bg-cabo-surface' : 'card-face-down'}`}
+            >
+              {opponentDrawn.card && <CardFace rank={opponentDrawn.card.rank} />}
+            </motion.div>
+            <span className="flex items-center gap-1.5 text-xs font-display text-cabo-textDim leading-tight">
+              <Hand size={18} fill="#f5e6c8" strokeWidth={1.5} className="text-cabo-accent shrink-0" />
+              <span>
+                <span className="text-cabo-text">{opponentDrawnName}</span> drew
+                <br />
+                {opponentDrawn.fromDiscard ? 'from the discard pile' : 'from the deck'}
+              </span>
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center gap-6 justify-center">
         {/* Draw Pile */}
         <motion.div
@@ -38,7 +71,7 @@ export const DrawAndDiscard: React.FC = () => {
           <motion.div
             onClick={canDraw ? drawFromDeck : undefined}
             className={`
-              relative w-16 h-24 md:w-20 md:h-28 rounded-xl card-face-down border border-cabo-border
+              relative card-size-pile rounded-xl card-face-down border border-cabo-border
               shadow-xl cursor-pointer transition-all duration-300
               ${canDraw ? 'hover:border-cabo-accent/50 hover:shadow-cabo-accent/20' : 'opacity-60'}
             `}
@@ -59,8 +92,8 @@ export const DrawAndDiscard: React.FC = () => {
           <motion.div
             onClick={canDraw && gameState.discardTop ? drawFromDiscard : undefined}
             className={`
-              relative w-16 h-24 md:w-20 md:h-28 rounded-xl border shadow-xl overflow-hidden text-sm
-              transition-all duration-300
+              relative card-size-pile rounded-xl border shadow-xl text-sm
+              transition-[box-shadow,border-color] duration-300
               ${gameState.discardTop
                 ? 'bg-cabo-surface border-cabo-border'
                 : 'border-dashed border-cabo-border bg-cabo-surface/30'
@@ -70,9 +103,14 @@ export const DrawAndDiscard: React.FC = () => {
             whileTap={canDraw && gameState.discardTop ? { scale: 0.95 } : {}}
           >
             {gameState.discardTop ? (
-              <div className={`absolute inset-0 transition-all duration-300 ${discardBlocked ? 'grayscale opacity-40' : ''}`}>
+              <motion.div
+                key={gameState.discardTop.id}
+                layoutId={gameState.discardTop.id}
+                transition={{ type: 'spring', stiffness: 70, damping: 15 }}
+                className={`absolute inset-0 rounded-xl overflow-hidden transition-[filter,opacity] duration-300 ${discardBlocked ? 'grayscale opacity-40' : ''}`}
+              >
                 <CardFace rank={gameState.discardTop.rank} />
-              </div>
+              </motion.div>
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <span className="text-cabo-textDim text-xs">Empty</span>
@@ -95,8 +133,12 @@ export const DrawAndDiscard: React.FC = () => {
             exit={{ opacity: 0, scale: 0.6, y: 20 }}
             className="flex items-center gap-3"
           >
-            <div className="relative">
-              <Card card={drawnCard} size="md" glowing />
+            <motion.div
+              layoutId={drawnCard.id}
+              transition={{ type: 'spring', stiffness: 70, damping: 15 }}
+              className="relative"
+            >
+              <Card card={drawnCard} size="pile" glowing />
               <motion.span
                 initial={{ y: -30, opacity: 0, rotate: -20 }}
                 animate={{ y: 0, opacity: 1, rotate: 0 }}
@@ -106,7 +148,7 @@ export const DrawAndDiscard: React.FC = () => {
               >
                 <Hand size={30} fill="#f5e6c8" strokeWidth={1.5} />
               </motion.span>
-            </div>
+            </motion.div>
             <div className="flex flex-col items-start gap-1.5">
               <span className="text-cabo-accent text-xs font-display font-semibold leading-tight">
                 You drew

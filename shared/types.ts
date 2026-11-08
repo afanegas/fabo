@@ -14,6 +14,7 @@ export * from './rules';
 // ─── Game Phases ───
 export type GamePhase =
   | 'WAITING'
+  | 'STARTER_PICK'   // rock-paper-scissors decides who starts
   | 'MEMORIZE'
   | 'PLAYING'
   | 'CABO_CALLED'
@@ -68,11 +69,27 @@ export interface ClientGameState {
   settings: GameSettings;
   lastAction: ActionNotice | null; // last move with a card, shown to everyone else
   opponentDrawn: OpponentDrawnCard | null; // card the player on turn is holding, as the others see it
+  starterPick: StarterPickState | null;    // only while rock-paper-scissors decides who starts
+}
+
+// ─── Rock-paper-scissors at the start of a game ───
+export type RpsChoice = 'rock' | 'paper' | 'scissors';
+
+export interface StarterPickState {
+  candidates: string[];      // players still in the draw (fewer after a 3+ player round)
+  pickedIds: string[];       // who has already chosen, without revealing what
+  myPick: RpsChoice | null;
+  reveal: {                  // everyone's choice, shown for a moment once all have picked
+    picks: Record<string, RpsChoice>;
+    outcome: 'tie' | 'narrowed' | 'winner';
+    winnerId?: string;
+  } | null;
 }
 
 // The card the player on turn has drawn: open if it came from the discard pile, hidden from the deck
 export interface OpponentDrawnCard {
   playerId: string;
+  cardId: string;            // only the id, so the card can be followed when it moves
   fromDiscard: boolean;
   card: Card | null;
 }
@@ -182,6 +199,7 @@ export enum SocketEvents {
   RECONNECT = 'reconnect_session',
   LEAVE_GAME = 'leave_game',
   JOIN_CHAMPIONSHIP = 'join_championship',
+  RPS_PICK = 'rps_pick',
   UPDATE_SETTINGS = 'update_settings',
 
   // Server → Client

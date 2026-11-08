@@ -164,6 +164,8 @@ The client runs on `http://localhost:5173` and the server on `http://localhost:3
 | 13      | 13      | 2      | —              |
 
 - **2–4 players** per room.
+- At the start of a game, **rock-paper-scissors** decides who starts; after that the start moves on to the next player each round.
+- In the **Fane-Lebo championship**, every round is a game of its own and counts for the championship.
 - Game ends when a player's total score reaches **100**.
 - Failed Cabo call = **+10 penalty**.
 - Ending a round with exactly two 12s and two 13s is an instant win: everyone else gets **50 points**.
